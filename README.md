@@ -2,49 +2,74 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-An autonomous trading system for Polymarket that uses a workforce of AI agents to make trading decisions based on real-time data and market signals.
+Agentic trading platform for Polymarket, built around a collaborative AI workforce, configurable signal pipelines, and a FastAPI control surface.
 
-## About The Project
+## What It Does
 
-This project is an agentic trading system designed to automate trading on the Polymarket platform. It uses a combination of traditional trading indicators, real-time data from sources like RSS feeds, and a workforce of AI agents powered by Large Language Models (LLMs) to analyze market conditions and execute trades.
+- Runs an agentic workforce that can analyze markets and generate trading actions.
+- Integrates external context sources (including RSS/news workflows) into decision-making.
+- Exposes API routes and UI pages for monitoring, settings, logs, decisions, and execution controls.
+- Supports manual and interval trigger modes for RSS/workforce flows.
+- Can run as a local API service or via Docker Compose with Redis, Qdrant, Ollama, and Neo4j.
 
-The system is designed to be highly modular and extensible, allowing for the addition of new signal sources, trading strategies, and exchange integrations.
+## Repository Layout
 
-## Key Features
+- `api/`: FastAPI application, route registry, routers, middleware, API services.
+- `core/`: runtime, workforce logic, exchange/tool integrations, shared services.
+- `frontend/`: static UI assets served by the API.
+- `scripts/`: operational utilities (trade CLI, MCP server runner, export/pruning tools).
+- `tests/`: unit/integration test coverage.
 
-*   **Agentic Workforce**: A team of AI agents that collaborate to analyze markets, propose trades, and execute them.
-*   **RSS Feed Integration**: Ingests and analyzes news from RSS feeds to generate trading signals.
-*   **Modular Architecture**: Easily extend the system with new signal sources, trading strategies, and exchange integrations.
-*   **Real-time Monitoring**: A FastAPI backend provides an API for real-time monitoring of trading activity.
-*   **Comprehensive Testing**: A suite of unit and integration tests to ensure the reliability of the system.
-*   **Trigger Modes**: Manual and Interval triggers for RSS flux with configurable cadence and limits.
-*   **MCP Server**: Expose the workforce as an MCP server (default `localhost:8001`).
+## Quick Start
 
-## Getting Started
+For full setup, see [`QUICKSTART.md`](QUICKSTART.md).
 
-To get a local copy up and running, please follow the steps in the [QUICKSTART.md](QUICKSTART.md) file.
+Minimal local run (from repository root):
+
+```bash
+cp env.example .env
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev]
+uvicorn api.main:app --reload
+```
+
+Then open:
+
+- API: `http://localhost:8000`
+- Docs: `http://localhost:8000/docs`
+- UI: `http://localhost:8000/ui`
 
 ## Trigger Modes
 
-*   **Manual**: Runs immediately on the latest feed and bypasses RSS cache thresholds and trade limit checks.
-*   **Interval**: Runs on a schedule (hours/days) and enforces RSS cache thresholds, verification, and limits.
+- `Manual`: Runs immediately, bypassing RSS cache thresholds and trade-limit checks.
+- `Interval`: Runs on schedule (hours/days), enforcing cache thresholds, verification, and limits.
 
-You can switch modes and set interval hours directly in the Workforce UI.
+Configure mode and cadence from the Workforce UI.
 
-## UI Defaults
+## MCP Server (Optional)
 
-The UI uses `.env` values by default. If you leave the login API key blank, the backend falls back to `POLYMARKET_API_KEY` from `.env`.
+You can expose the workforce as an MCP server:
 
-## Project Status
+```bash
+python scripts/workforce_mcp_server.py
+```
 
-This project is currently in active development. The immediate focus is on completing the RSS feed integration and the workforce management system. See the [TODO.md](TODO.md) file for a more detailed roadmap.
+Defaults:
+
+- Host: `0.0.0.0`
+- Port: `8001`
+
+Override with `MCP_HOST` and `MCP_PORT` in your environment.
+
+## Development Status
+
+Active development is ongoing. See [`TODO.md`](TODO.md) for near-term priorities.
 
 ## Contributing
 
-Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
+Contribution workflow and standards are documented in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License. See [`LICENSE`](LICENSE).
