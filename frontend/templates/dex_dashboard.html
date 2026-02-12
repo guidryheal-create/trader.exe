@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="grid three">
+  <div class="card">
+    <h3>DEX Runtime</h3>
+    <div class="kpi" id="dex-kpi-running">-</div>
+    <div class="muted">Cycle / watchlist runtime state</div>
+  </div>
+  <div class="card">
+    <h3>Open Positions</h3>
+    <div class="kpi" id="dex-kpi-open-positions">0</div>
+    <div class="muted">Wallet positions tracked by watchlist</div>
+  </div>
+  <div class="card">
+    <h3>Global ROI</h3>
+    <div class="kpi" id="dex-kpi-global-roi">0%</div>
+    <div class="muted">Portfolio-level ROI</div>
+  </div>
+</section>
+
+<section class="grid two" style="margin-top: 16px;">
+  <div class="card">
+    <h3>Controls</h3>
+    <div class="input-row">
+      <label>Active Bot
+        <select id="dex-active-bot">
+          <option value="dex">DEX Trader</option>
+          <option value="polymarket">Polymarket</option>
+        </select>
+      </label>
+    </div>
+    <div class="input-row">
+      <label><input type="checkbox" id="dex-cycle-enabled" checked /> Cycle Enabled</label>
+      <label><input type="checkbox" id="dex-watchlist-enabled" checked /> Watchlist Enabled</label>
+    </div>
+    <div class="input-row" style="margin-top: 10px;">
+      <label>Cycle Hours <input id="dex-cycle-hours" type="number" min="1" max="168" value="4" /></label>
+      <label>Watchlist Scan (s) <input id="dex-watchlist-scan" type="number" min="5" max="3600" value="60" /></label>
+    </div>
+    <div class="input-row" style="margin-top: 12px;">
+      <button id="btn-dex-start" class="btn-success">Start</button>
+      <button id="btn-dex-stop" class="btn-danger">Stop</button>
+      <button id="btn-dex-trigger" class="btn-trigger">Trigger Cycle</button>
+      <button id="btn-dex-save-config" class="btn-secondary">Save Config</button>
+    </div>
+    <div id="dex-control-result" class="muted" style="margin-top: 10px;">Ready.</div>
+  </div>
+
+  <div class="card">
+    <h3>Metrics</h3>
+    <pre id="dex-metrics-box" class="log" style="max-height: 220px; overflow-y: auto;">Loading...</pre>
+  </div>
+</section>
+
+<section class="grid two" style="margin-top: 16px;">
+  <div class="card">
+    <h3>Task Stream</h3>
+    <div id="dex-task-stream" class="log" style="max-height: 280px; overflow-y: auto;">Loading...</div>
+  </div>
+  <div class="card">
+    <h3>Trade History</h3>
+    <div id="dex-trade-stream" class="log" style="max-height: 280px; overflow-y: auto;">Loading...</div>
+  </div>
+</section>
+
+<section class="card" style="margin-top: 16px;">
+  <h3>DEX Log Stream</h3>
+  <div id="dex-log-stream" class="log" style="max-height: 320px; overflow-y: auto;">Loading...</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.ui.loadDexDashboard();
+  document.getElementById('btn-dex-start').addEventListener('click', window.ui.startDexTrader);
+  document.getElementById('btn-dex-stop').addEventListener('click', window.ui.stopDexTrader);
+  document.getElementById('btn-dex-trigger').addEventListener('click', window.ui.triggerDexCycle);
+  document.getElementById('btn-dex-save-config').addEventListener('click', window.ui.saveDexConfig);
+  setInterval(() => window.ui.loadDexDashboard(), 15000);
+</script>
+{% endblock %}

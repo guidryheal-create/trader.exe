@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h3>Choose Bot Panel</h3>
+  <div class="muted">Select the interface you want to manage.</div>
+</section>
+
+<section class="grid two" style="margin-top: 16px;">
+  {% for panel in bot_panels %}
+  <div class="card">
+    <h3>{{ panel.label }} Panel</h3>
+    <p class="muted">{{ panel.description }}</p>
+    <a href="{{ panel.ui_path }}"><button>Open {{ panel.label }} UI</button></a>
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,396 @@
+"""
+Data models for the Agentic Trading System.
+"""
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
+
+
+class TradeAction(str, Enum):
+    """Trading action types."""
+    BUY = "BUY"
+    SELL = "SELL"
+    HOLD = "HOLD"
+
+
+class SignalType(str, Enum):
+    """Signal types from different agents."""
+    DQN_PREDICTION = "DQN_PREDICTION"
+    TECHNICAL_ANALYSIS = "TECHNICAL_ANALYSIS"
+    NEWS_SENTIMENT = "NEWS_SENTIMENT"
+    RISK_ALERT = "RISK_ALERT"
+    COPY_TRADE = "COPY_TRADE"
+    MEMORY_INSIGHT = "MEMORY_INSIGHT"
+    TREND_ASSESSMENT = "TREND_ASSESSMENT"
+    FACT_SUMMARY = "FACT_SUMMARY"
+    FUSION_DECISION = "FUSION_DECISION"
+
+
+class AgentType(str, Enum):
+    """Agent types in the system."""
+    MEMORY = "MEMORY"
+    DQN = "DQN"
+    CHART = "CHART"
+    RISK = "RISK"
+    NEWS = "NEWS"
+    COPYTRADE = "COPYTRADE"
+    TREND = "TREND"
+    FACT = "FACT"
+    FUSION = "FUSION"
+    ORCHESTRATOR = "ORCHESTRATOR"
+
+
+class MessageType(str, Enum):
+    """Message types for inter-agent communication."""
+    MARKET_DATA_UPDATE = "MARKET_DATA_UPDATE"
+    SIGNAL_GENERATED = "SIGNAL_GENERATED"
+    RISK_ALERT = "RISK_ALERT"
+    TRADE_EXECUTED = "TRADE_EXECUTED"
+    NEWS_EVENT = "NEWS_EVENT"
+    AGENT_HEARTBEAT = "AGENT_HEARTBEAT"
+    HUMAN_VALIDATION_REQUEST = "HUMAN_VALIDATION_REQUEST"
+    HUMAN_VALIDATION_RESPONSE = "HUMAN_VALIDATION_RESPONSE"
+
+
+class MarketData(BaseModel):
+    """Market data for a specific asset."""
+    ticker: str
+    price: float
+    volume: float
+    timestamp: datetime
+    interval: str  # minutes, hours, days
+    open: Optional[float] = None
+    high: Optional[float] = None
+    low: Optional[float] = None
+    close: Optional[float] = None
+
+
+class DQNPrediction(BaseModel):
+    """DQN prediction from MCP API."""
+    ticker: str
+    action: TradeAction
+    confidence: float
+    forecast_price: Optional[float] = None
+    forecast_horizon: str  # e.g., "T+14days"
+    timestamp: datetime
+
+
+class TechnicalSignal(BaseModel):
+    """Technical analysis signal."""
+    ticker: str
+    rsi: Optional[float] = None
+    macd: Optional[float] = None
+    macd_signal: Optional[float] = None
+    bollinger_upper: Optional[float] = None
+    bollinger_lower: Optional[float] = None
+    volume_sma: Optional[float] = None
+    recommendation: TradeAction
+    strength: float  # 0-1
+    timestamp: datetime
+
+
+class NewsSentiment(BaseModel):
+    """News sentiment analysis result."""
+    ticker: Optional[str] = None  # None for general market sentiment
+    sentiment_score: float  # -1 to 1
+    confidence: float
+    summary: str
+    sources: List[str]
+    timestamp: datetime
+
+
+class RiskMetrics(BaseModel):
+    """Risk metrics for portfolio or specific position."""
+    ticker: Optional[str] = None  # None for portfolio-level metrics
+    var_95: Optional[float] = None  # Value at Risk 95%
+    cvar_95: Optional[float] = None  # Conditional VaR 95%
+    position_size: Optional[float] = None
+    max_position_size: Optional[float] = None
+    current_drawdown: Optional[float] = None
+    max_drawdown: Optional[float] = None
+    daily_pnl: Optional[float] = None
+    risk_level: str  # LOW, MEDIUM, HIGH, CRITICAL
+    warnings: List[str] = []
+    risk_score: Optional[float] = None
+    risk_metric: Optional[float] = None
+    stop_loss_upper: Optional[float] = None
+    stop_loss_lower: Optional[float] = None
+    timestamp: datetime
+
+
+class CopyTradeSignal(BaseModel):
+    """Copy trade signal from on-chain analysis."""
+    wallet_address: str
+    blockchain: str  # BSC, ETH, SOL, etc.
+    ticker: str
+    action: TradeAction
+    amount: float
+    price: float
+    wallet_performance: Optional[float] = None  # Historical performance
+    confidence: float
+    timestamp: datetime
+
+
+class AgentSignal(BaseModel):
+    """Generic signal from any agent."""
+    agent_type: AgentType
+    signal_type: SignalType
+    ticker: Optional[str] = None
+    action: Optional[TradeAction] = None
+    confidence: float
+    data: Dict  # Agent-specific data
+    reasoning: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class TradeDecision(BaseModel):
+    """Final trade decision from orchestrator."""
+    ticker: str
+    action: TradeAction
+    quantity: float
+    expected_price: Optional[float] = None
+    confidence: float
+    reasoning: str
+    contributing_signals: List[AgentSignal]
+    risk_approved: bool
+    requires_human_validation: bool = False
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    agentic: bool = True
+    ai_explanation: Optional[str] = None
+
+
+class TradeExecution(BaseModel):
+    """Trade execution result."""
+    decision_id: str
+    ticker: str
+    action: TradeAction
+    quantity: float
+    executed_price: float
+    total_cost: float
+    fee: float
+    success: bool
+    error_message: Optional[str] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Portfolio(BaseModel):
+    """Current portfolio state."""
+    balance_usdc: float
+    holdings: Dict[str, float]  # ticker -> quantity
+    total_value_usdc: float
+    daily_pnl: float
+    total_pnl: float
+    positions: List[Dict]  # Detailed position info
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class AgentMessage(BaseModel):
+    """Message for inter-agent communication."""
+    message_type: MessageType
+    sender: AgentType
+    recipient: Optional[AgentType] = None  # None for broadcast
+    payload: Dict
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    correlation_id: Optional[str] = None
+
+
+class MemoryRecord(BaseModel):
+    """Memory record for historical tracking."""
+    record_type: str  # trade, signal, performance, etc.
+    ticker: Optional[str] = None
+    data: Dict
+    outcome: Optional[str] = None
+    performance_impact: Optional[float] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class PerformanceMetrics(BaseModel):
+    """Performance metrics for the trading system."""
+    total_trades: int
+    winning_trades: int
+    losing_trades: int
+    win_rate: float
+    total_pnl: float
+    sharpe_ratio: Optional[float] = None
+    max_drawdown: float
+    current_drawdown: float
+    roi: float
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class HumanValidationRequest(BaseModel):
+    """Request for human validation of a trade decision."""
+    request_id: str
+    decision: TradeDecision
+    urgency: str  # LOW, MEDIUM, HIGH
+    reason: str
+    timeout_seconds: int = 300  # 5 minutes default
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class HumanValidationResponse(BaseModel):
+    """Response to human validation request."""
+    request_id: str
+    approved: bool
+    feedback: Optional[str] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class TradeMemoryEntry(BaseModel):
+    """FIFO trade tape entry stored by the memory agent."""
+    trade_id: str
+    ticker: str
+    action: TradeAction
+    quantity: float
+    price: float
+    pnl: Optional[float] = None
+    status: Optional[str] = None  # WIN / LOSS / BREAKEVEN / UNKNOWN
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class NewsMemoryEntry(BaseModel):
+    """Recency-weighted news sentiment memory entry."""
+    news_id: str
+    ticker: Optional[str] = None
+    sentiment_score: float
+    confidence: float
+    summary: str
+    sources: List[str]
+    weight: float
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class GraphMemoryNode(BaseModel):
+    """Node within the long-term knowledge graph."""
+    node_id: str
+    label: str
+    node_type: str
+    weight: float = 1.0
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class GraphMemoryEdge(BaseModel):
+    """Relationship edge within the long-term knowledge graph."""
+    edge_id: str
+    source: str
+    target: str
+    relation: str
+    weight: float = 1.0
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class TrendTableEntry(BaseModel):
+    """Entry in trend table: [date, real|"_", pred] format."""
+    date: str  # ISO8601 datetime string
+    real: Optional[float] = None  # Real price or "_" if not yet known
+    pred: float  # Predicted price
+
+
+class TrendAssessment(BaseModel):
+    """Aggregated trend assessment derived from DQN and technical analysis pipelines."""
+    ticker: str
+    trend_score: float  # 0-1 composite score
+    momentum: Optional[float] = None  # 0-1 momentum strength (can be None if not calculable)
+    volatility: Optional[float] = None
+    recommended_action: TradeAction
+    confidence: float
+    supporting_signals: Dict[str, Any] = Field(default_factory=dict)
+    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    agentic: bool = True
+    ai_explanation: Optional[str] = None
+    # ✅ Agent schema alignment: distributions, value_estimate, trend_table
+    decision_distribution: Dict[str, float] = Field(default_factory=dict)  # {"BUY": 0.7, "HOLD": 0.2, "SELL": 0.1}
+    value_estimate: Optional[float] = None  # Value estimate (-1.0 to 1.0)
+    trend_table: List[TrendTableEntry] = Field(default_factory=list)  # T-5 to T+delta trend table
+    risk_flags: List[str] = Field(default_factory=list)  # Risk flags (e.g., "high_volatility", "divergence")
+
+
+class FactInsight(BaseModel):
+    """Fundamental/news insight combining deep research, sentiment, and external knowledge."""
+    ticker: Optional[str] = None
+    sentiment_score: float
+    confidence: float
+    thesis: str
+    references: List[Dict[str, Any]] = Field(default_factory=list)
+    anomalies: List[str] = Field(default_factory=list)
+    sentiment_breakdown: Dict[str, Any] = Field(default_factory=dict)
+    market_indicators: Dict[str, Any] = Field(default_factory=dict)
+    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    agentic: bool = True
+    ai_explanation: Optional[str] = None
+    # ✅ Agent schema alignment: distributions, value_estimate, risk flags
+    decision_distribution: Dict[str, float] = Field(default_factory=dict)  # {"BUY": 0.6, "HOLD": 0.3, "SELL": 0.1}
+    value_estimate: Optional[float] = None  # Value estimate (-1.0 to 1.0, derived from sentiment)
+    risk_flags: List[str] = Field(default_factory=list)  # Risk flags (e.g., "negative_sentiment", "market_fear")
+
+
+class AgentReportComponent(BaseModel):
+    """Report from a single agent (Trend, Fact, Memory, etc)."""
+    agent: str  # "TrendAgent", "FactAgent", "MemoryAgent", etc.
+    decision: str  # "BUY", "HOLD", "SELL"
+    dist: Dict[str, float] = Field(default_factory=dict)  # {"BUY": 0.7, "HOLD": 0.2, "SELL": 0.1}
+    explanation: Optional[str] = None
+    value_estimate: Optional[float] = None
+
+
+class FusionReportDetail(BaseModel):
+    """Detailed report from fusion decision."""
+    method: str = "dqn_argmax"  # Decision method
+    picked: str  # Final action chosen
+    distribution: Dict[str, float] = Field(default_factory=dict)  # Final fused distribution
+    utility_scores: Dict[str, float] = Field(default_factory=dict)  # Utility score for each action
+
+
+class DetailedReportPayload(BaseModel):
+    """Detailed breakdown of fusion decision by agent."""
+    agents: List[AgentReportComponent] = Field(default_factory=list)
+    fusion: Optional[FusionReportDetail] = None
+
+
+class FusionResponseFormat(BaseModel):
+    """
+    Complete response format for fusion decisions (daily workforce + hourly pipelines).
+    
+    This is the canonical output shape for all fusion decisions across strategies
+    and intervals. It includes trend history, detailed agent reports, and
+    complete traceability for user-facing UI and internal analysis.
+    """
+    symbol: str  # Ticker symbol
+    trade_date: str  # ISO8601 date for T+1 trade execution
+    horizon: str  # "T+1h", "T+1d", etc.
+    trend_table: List[TrendTableEntry] = Field(default_factory=list)  # T-5 to T+delta history
+    final_decision: str  # "BUY", "HOLD", "SELL"
+    decision_score: float  # Fused utility score (0.0-1.0)
+    position_pct: float  # Wallet allocation (0.0-1.0)
+    stop_loss_lower: float  # Lower stop-loss band (e.g., -0.03)
+    stop_loss_upper: float  # Upper stop-loss band (e.g., +0.015)
+    short_explanation: str  # One-line UI explanation
+    detailed_report: Optional[DetailedReportPayload] = None
+    log_id: str  # Unique trace ID for this decision
+
+
+class FusionRecommendation(BaseModel):
+    """Fusion layer recommendation that fuses trend, fact, risk, and copytrade signals."""
+    ticker: str
+    action: TradeAction
+    confidence: float
+    percent_allocation: float
+    stop_loss_upper: float
+    stop_loss_lower: float
+    risk_level: str
+    rationale: str
+    components: Dict[str, Any] = Field(default_factory=dict)
+    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    agentic: bool = True
+    ai_explanation: Optional[str] = None
+    priority_score: Optional[float] = None
+    wallet_percent_allocation: Optional[float] = None
+

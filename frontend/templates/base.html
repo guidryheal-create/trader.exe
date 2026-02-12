@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trading Workforce Console</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <div class="logo"></div>
+        <h1>Trading Workforce Console</h1>
+      </div>
+      <nav>
+        <a href="/ui">Panels</a>
+        {% for panel in bot_panels %}
+        <a href="{{ panel.ui_path }}">{{ panel.label }}</a>
+        {% endfor %}
+        <a href="/ui/{{ active_system_id }}/workforce">Workforce</a>
+        <a href="/ui/{{ active_system_id }}/settings">Settings</a>
+        {% if active_system_id == "polymarket" %}
+        <a href="/ui/polymarket/markets">Markets</a>
+        <a href="/ui/polymarket/results">Results</a>
+        <a href="/ui/polymarket/orders">Orders</a>
+        <a href="/ui/polymarket/chat">Chat</a>
+        {% endif %}
+      </nav>
+      <div class="bot-selector">
+        <label for="active-bot-select">Active Bot</label>
+        <select id="active-bot-select">
+          {% for panel in bot_panels %}
+          <option value="{{ panel.system_id }}" {% if active_bot == panel.system_id %}selected{% endif %}>{{ panel.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="auth-status">
+        {% set has_wallet = is_authenticated and wallet_address %}
+        <div class="{{ 'connected' if has_wallet else 'disconnected' }}">
+          <span class="dot"></span>
+
+          <span id="auth-wallet" class="{{ '' if has_wallet else 'hidden' }}">
+            {% if has_wallet %}
+              {{ wallet_address[:6] ~ '...' ~ wallet_address[-4:] }}
+            {% endif %}
+          </span>
+
+          <span id="auth-status" class="{{ '' if has_wallet else 'hidden' }}">
+            {{ 'Authenticated' if is_authenticated else 'Not Authenticated' }}
+          </span>
+
+          <button
+            id="auth-button"
+            onclick="window.ui.showAuthModal()"
+            style="margin-left: 10px; padding: 6px 12px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;"
+          >
+            {{ 'Auth' if is_authenticated else 'Login' }}
+          </button>
+        </div>
+      </div>
+    </header>
+    <main>
+      {% block content %}{% endblock %}
+      <div class="footer">Dual-panel console (Polymarket + DEX) • CAMEL workforce + native clients</div>
+    </main>
+    
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h2>Authentication</h2>
+          <button onclick="window.ui.closeAuthModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">×</button>
+        </div>
+        <form id="auth-form" onsubmit="window.ui.handleLogin(event)" style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label for="auth-api-key">API Key (optional, falls back to .env)</label>
+            <input type="password" id="auth-api-key" placeholder="Use .env default if left blank" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;" />
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label for="auth-wallet">Wallet Address (optional)</label>
+            <input type="text" id="auth-wallet-input" placeholder="0x..." style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;" />
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label for="auth-private-key">Polygon Private Key (optional)</label>
+            <input type="password" id="auth-private-key" placeholder="POLYGON_PRIVATE_KEY" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;" />
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label for="auth-clob-api-key">CLOB API Key (optional)</label>
+            <input type="password" id="auth-clob-api-key" placeholder="CLOB_API_KEY" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;" />
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label for="auth-clob-secret">CLOB Secret (optional)</label>
+            <input type="password" id="auth-clob-secret" placeholder="CLOB_SECRET" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;" />
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label for="auth-clob-passphrase">CLOB Passphrase (optional)</label>
+            <input type="password" id="auth-clob-passphrase" placeholder="CLOB_PASS_PHRASE" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;" />
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="submit" style="flex: 1; padding: 10px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">Login</button>
+            <button type="button" onclick="window.ui.closeAuthModal()" style="flex: 1; padding: 10px; background: #ddd; color: #333; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">Cancel</button>
+          </div>
+          <div id="auth-error" class="auth-error" style="display: none; padding: 10px; background: #f8d7da; color: #721c24; border-radius: 4px; font-size: 0.9rem;"></div>
+        </form>
+      </div>
+    </div>
+    
+    <script src="/static/app.js"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>
+
+<style>
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  
+  .modal-content {
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .modal-content h2 {
+    margin: 0 0 16px 0;
+    font-size: 1.5rem;
+  }
+  
+  .auth-error {
+    color: #721c24;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+</style>

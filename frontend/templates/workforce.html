@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="grid two">
+  <div class="card">
+    <h3>{{ active_system_id|upper }} Workforce Control</h3>
+    <div class="form-group" id="wf-trigger-type-group">
+      <label>Trigger Type</label>
+      <select id="trigger-type-select" onchange="window.ui.changeTriggerType()">
+        <option value="manual">Manual</option>
+        <option value="interval">Interval</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Interval (hours)</label>
+      <input id="trigger-interval-hours" type="number" min="1" max="168" value="4" />
+    </div>
+    <div style="margin-top: 12px;">
+      <button id="trigger-wf" onclick="window.ui.triggerWorkforce()" class="btn-trigger">Trigger Manager</button>
+    </div>
+    <div class="result-box" id="wf-trigger-result" style="margin-top: 10px; display: none;"></div>
+  </div>
+  
+  <div class="card">
+    <h3>Manager Controls</h3>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <button id="btn-start-flux" onclick="window.ui.startFlux()" class="btn-success">Start Manager</button>
+      <button id="btn-stop-flux" onclick="window.ui.stopFlux()" class="btn-danger">Stop Manager</button>
+      <button onclick="window.ui.loadWorkforce()" class="btn-secondary">Refresh Status</button>
+    </div>
+  </div>
+</section>
+
+<section class="grid two" style="margin-top: 16px;">
+  <div class="card">
+    <h3>Workforce Status</h3>
+    <div class="status-display" id="wf-status">Loading...</div>
+  </div>
+  <div class="card">
+    <h3>Flow Details</h3>
+    <div class="status-display" id="rss-cache">Loading...</div>
+  </div>
+</section>
+
+<style>
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .form-group label {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #333;
+  }
+  
+  .form-group select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.9rem;
+  }
+  
+  .form-group select:focus {
+    outline: none;
+    border-color: #0066cc;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
+  }
+  
+  .btn-trigger {
+    padding: 10px 16px;
+    background: #0066cc;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .btn-trigger:hover:not(:disabled) {
+    background: #0052a3;
+  }
+  
+  .btn-trigger:disabled {
+    background: #999;
+    cursor: not-allowed;
+  }
+  
+  .btn-success {
+    padding: 8px 14px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+  }
+  
+  .btn-success:hover {
+    background: #218838;
+  }
+  
+  .btn-danger {
+    padding: 8px 14px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+  }
+  
+  .btn-danger:hover {
+    background: #c82333;
+  }
+  
+  .btn-secondary {
+    padding: 8px 14px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+  }
+  
+  .btn-secondary:hover {
+    background: #5a6268;
+  }
+  
+  .status-display {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.9rem;
+  }
+  
+  .status-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .status-item:last-child {
+    border-bottom: none;
+  }
+  
+  .status-item .label {
+    font-weight: 500;
+    color: #666;
+    flex: 1;
+  }
+  
+  .status-item .value {
+    font-family: 'IBM Plex Mono', monospace;
+    color: #333;
+    text-align: right;
+  }
+  
+  .status-item .value.ok {
+    color: #28a745;
+    font-weight: 600;
+  }
+  
+  .status-item .value.warn {
+    color: #ffc107;
+    font-weight: 600;
+  }
+  
+  .result-box {
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+  
+  .result-box .success {
+    background: #d4edda;
+    color: #155724;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #c3e6cb;
+  }
+  
+  .result-box .error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #f5c6cb;
+  }
+
+  .loading {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  
+  .spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0066cc;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .market-item {
+    padding: 5px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.85rem;
+  }
+
+  .market-item strong {
+    color: #0066cc;
+  }
+</style>
+{% endblock %}
+{% block scripts %}
+<script>
+  window.ui.loadWorkforce();
+  // Auto-refresh every 30 seconds
+  setInterval(() => window.ui.loadWorkforce(), 30000);
+</script>
+{% endblock %}

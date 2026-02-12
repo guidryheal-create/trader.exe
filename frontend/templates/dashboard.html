@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="grid three">
+  <div class="card">
+    <h3>Total Trades</h3>
+    <div class="kpi" id="kpi-total-trades">0</div>
+    <div class="muted">All executed trades</div>
+  </div>
+  <div class="card">
+    <h3>Open Positions</h3>
+    <div class="kpi" id="kpi-open-positions">0</div>
+    <div class="muted">Tracked exposure (wallet)</div>
+  </div>
+  <div class="card">
+    <h3>RSS Bets</h3>
+    <div class="kpi" id="kpi-rss-bets">0</div>
+    <div class="muted">Cached Polymarket feed</div>
+  </div>
+</section>
+
+<section class="grid two" style="margin-top: 16px;">
+  <div class="card">
+    <h3>Workforce & Controls</h3>
+    <div class="muted">Active Manager</div>
+    <div class="tag" id="workforce-flux">Loading...</div>
+    <div style="margin-top:12px;" class="input-row">
+      <button id="btn-start-flux" class="btn-success">Start Manager</button>
+      <button id="btn-stop-flux" class="btn-danger">Stop Manager</button>
+      <button id="btn-trigger-flux" class="btn-trigger">Trigger Manager</button>
+      <button id="btn-refresh-dashboard" class="btn-secondary">Refresh</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Latest Decisions</h3>
+    <div id="decision-list" class="muted">Loading...</div>
+    <div style="margin-top: 8px; font-size: 11px;" class="refresh-indicator">
+      <div class="dot"></div>
+      <span>Auto-refresh 15s</span>
+    </div>
+  </div>
+</section>
+
+<section class="grid two" style="margin-top: 16px;">
+  <div class="card">
+    <h3>CLOB Snapshot</h3>
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="label">Open Orders</div>
+        <div class="value" id="kpi-open-orders">-</div>
+      </div>
+      <div class="stat">
+        <div class="label">Recent Trades</div>
+        <div class="value" id="kpi-recent-trades">-</div>
+      </div>
+      <div class="stat">
+        <div class="label">Latest Price</div>
+        <div class="value" id="kpi-latest-price">-</div>
+      </div>
+    </div>
+    <div class="muted" id="clob-status" style="margin-top: 10px;">Awaiting CLOB data...</div>
+  </div>
+  <div class="card">
+    <h3>Recent CLOB Trades</h3>
+    <table class="table compact">
+      <thead>
+        <tr>
+          <th>Market</th>
+          <th>Side</th>
+          <th>Price</th>
+          <th>Size</th>
+        </tr>
+      </thead>
+      <tbody id="clob-trades-table"></tbody>
+    </table>
+    <div id="clob-trades-empty" class="empty" style="display:none;">No trades to display.</div>
+  </div>
+</section>
+
+<section class="card" style="margin-top: 16px;">
+  <h3>Market Search</h3>
+  <div class="input-row">
+    <input id="market-query" placeholder="Search markets (eg. bitcoin)" />
+    <select id="market-category">
+      <option value="">All Categories</option>
+      <option value="crypto">Crypto</option>
+      <option value="politics">Politics</option>
+      <option value="sports">Sports</option>
+      <option value="macro">Macro</option>
+      <option value="other">Other</option>
+    </select>
+    <button id="btn-search-markets" class="btn-primary">Search</button>
+  </div>
+  <table class="table compact" style="margin-top:10px;">
+    <thead>
+      <tr><th>ID</th><th>Title</th><th>Liquidity</th><th>24h Vol</th></tr>
+    </thead>
+    <tbody id="market-results"></tbody>
+  </table>
+</section>
+
+<section class="card" style="margin-top: 16px;">
+  <h3>Results Tracking</h3>
+  <div class="input-row" style="margin-bottom:10px;">
+    <button id="btn-refresh-results" class="btn-primary">Refresh Results</button>
+    <button id="btn-export-results" class="btn-secondary">Export CSV</button>
+  </div>
+  <div class="stat-grid" style="margin-bottom:10px;">
+    <div class="stat"><div class="label">Total Trades</div><div class="value" id="results-total-trades">0</div></div>
+    <div class="stat"><div class="label">Win Rate</div><div class="value" id="results-win-rate">n/a</div></div>
+    <div class="stat"><div class="label">Net P&L</div><div class="value" id="results-net-pnl">n/a</div></div>
+    <div class="stat"><div class="label">ROI</div><div class="value" id="results-roi">n/a</div></div>
+  </div>
+  <table class="table compact">
+    <thead><tr><th>Market</th><th>Outcome</th><th>Qty</th><th>Price</th><th>Status</th></tr></thead>
+    <tbody id="results-trades-table"></tbody>
+  </table>
+  <div id="results-trades-empty" class="empty" style="display:none;">No trades recorded.</div>
+</section>
+
+<section class="card" style="margin-top: 16px;">
+  <h3>Workforce Log Stream</h3>
+  <div class="log" id="log-box" style="max-height: 300px; overflow-y: auto;">Loading...</div>
+</section>
+
+{% endblock %}
+{% block scripts %}
+<script>
+  // Initialize UI and attach handlers
+  window.ui.loadDashboard();
+  document.getElementById('btn-search-markets').addEventListener('click', window.ui.loadMarkets);
+  document.getElementById('btn-refresh-dashboard').addEventListener('click', window.ui.loadDashboard);
+  document.getElementById('btn-refresh-results').addEventListener('click', window.ui.loadResults);
+  document.getElementById('btn-export-results').addEventListener('click', window.ui.exportResultsCSV);
+  document.getElementById('btn-start-flux').addEventListener('click', window.ui.startFlux);
+  document.getElementById('btn-stop-flux').addEventListener('click', window.ui.stopFlux);
+  document.getElementById('btn-trigger-flux').addEventListener('click', window.ui.triggerWorkforce);
+
+  // Periodic updates
+  setInterval(() => {
+    window.ui.loadDashboard();
+  }, 15000);
+</script>
+{% endblock %}

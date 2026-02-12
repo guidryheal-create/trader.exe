@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="grid two">
+  <div class="card">
+    <h3>Open Orders</h3>
+    <div class="input-row" style="margin-bottom: 12px;">
+      <input id="orders-market" placeholder="Market (optional)" />
+      <button onclick="window.ui.loadOpenOrders()" class="btn-primary">Load</button>
+    </div>
+    <table class="table compact">
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Market</th>
+          <th>Side</th>
+          <th>Price</th>
+          <th>Size</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="orders-open"></tbody>
+    </table>
+    <div id="orders-open-empty" class="empty" style="display:none;">No open orders found.</div>
+  </div>
+  
+  <div class="card">
+    <h3>Recent Trades</h3>
+    <div class="input-row" style="margin-bottom: 12px;">
+      <input id="trades-market" placeholder="Market (optional)" />
+      <button onclick="window.ui.loadTrades()" class="btn-primary">Load</button>
+    </div>
+    <table class="table compact">
+      <thead>
+        <tr>
+          <th>Market</th>
+          <th>Side</th>
+          <th>Price</th>
+          <th>Size</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody id="trades-list"></tbody>
+    </table>
+    <div id="trades-list-empty" class="empty" style="display:none;">No trades found.</div>
+  </div>
+</section>
+
+<section class="card" style="margin-top: 16px;">
+  <h3>Order Status Legend</h3>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; font-size: 13px;">
+    <div style="padding: 8px; background: #0d131b; border-radius: 6px; border-left: 3px solid var(--ok);">
+      <strong style="color: var(--ok);">Filled</strong>
+      <div style="color: var(--muted); font-size: 12px;">Order completed</div>
+    </div>
+    <div style="padding: 8px; background: #0d131b; border-radius: 6px; border-left: 3px solid var(--accent);">
+      <strong style="color: var(--accent);">Open</strong>
+      <div style="color: var(--muted); font-size: 12px;">Awaiting execution</div>
+    </div>
+    <div style="padding: 8px; background: #0d131b; border-radius: 6px; border-left: 3px solid var(--accent-2);">
+      <strong style="color: var(--accent-2);">Pending</strong>
+      <div style="color: var(--muted); font-size: 12px;">Recently placed</div>
+    </div>
+    <div style="padding: 8px; background: #0d131b; border-radius: 6px; border-left: 3px solid var(--danger);">
+      <strong style="color: var(--danger);">Cancelled</strong>
+      <div style="color: var(--muted); font-size: 12px;">Order cancelled</div>
+    </div>
+  </div>
+</section>
+
+<style>
+  input[type="text"] {
+    flex: 1;
+  }
+</style>
+
+{% endblock %}
+{% block scripts %}
+<script>
+  window.ui.loadOpenOrders();
+  window.ui.loadTrades();
+</script>
+{% endblock %}

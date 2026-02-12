@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="grid two">
+  <div class="card">
+    <h3>Results Summary</h3>
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="label">Total Trades</div>
+        <div class="value" id="results-total-trades">-</div>
+      </div>
+      <div class="stat">
+        <div class="label">Win Rate</div>
+        <div class="value" id="results-win-rate">-</div>
+      </div>
+      <div class="stat">
+        <div class="label">Net P&L</div>
+        <div class="value" id="results-net-pnl">-</div>
+      </div>
+      <div class="stat">
+        <div class="label">ROI</div>
+        <div class="value" id="results-roi">-</div>
+      </div>
+    </div>
+    <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+      <button id="btn-refresh-results" onclick="window.ui.loadResults()" class="btn-primary">Refresh</button>
+      <button id="btn-export-results" onclick="window.ui.exportResultsCSV()" class="btn-secondary">Export CSV</button>
+    </div>
+    <div class="muted" style="margin-top:10px;">Summary from Polymarket trades. Auto-refresh every 20 seconds.</div>
+  </div>
+  <div class="card">
+    <h3>Performance Chart</h3>
+    <div id="perf-chart" style="padding: 16px; background: #0d131b; border-radius: 8px; border: 1px solid #1f2a3a; height: 200px; display: flex; align-items: center; justify-content: center; color: var(--muted);">
+      <div>P&L over time (20 latest trades)</div>
+    </div>
+  </div>
+</section>
+
+<section class="card" style="margin-top: 16px;">
+  <h3>Recent Trades</h3>
+  <div class="input-row" style="margin-bottom: 12px;">
+    <select id="results-filter" style="max-width: 200px;">
+      <option value="">All Trades</option>
+      <option value="won">Won Trades</option>
+      <option value="lost">Lost Trades</option>
+      <option value="pending">Pending</option>
+    </select>
+  </div>
+  <table class="table compact">
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Market</th>
+        <th>Outcome</th>
+        <th>Qty</th>
+        <th>Price</th>
+        <th>P&L</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="results-trades-table"></tbody>
+  </table>
+  <div id="results-trades-empty" class="empty" style="display:none;">No trades yet. Trades will appear here once placed.</div>
+</section>
+
+<style>
+  #results-filter {
+    padding: 8px 12px;
+    border: 1px solid #1f2a3a;
+    border-radius: 6px;
+    background: #0f1520;
+    color: var(--text);
+    font-size: 13px;
+  }
+  
+  #results-filter:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+</style>
+{% endblock %}
+{% block scripts %}
+<script>
+  window.ui.loadResults();
+  
+  // Filter handling
+  document.getElementById('results-filter').addEventListener('change', (e) => {
+    // Can be enhanced to actually filter the results
+    window.ui.loadResults();
+  });
+  
+  // Auto-refresh every 20 seconds
+  setInterval(() => {
+    window.ui.loadResults();
+  }, 20000);
+</script>
+{% endblock %}
+

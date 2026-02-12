@@ -1,0 +1,279 @@
+services:
+
+  # ============================================
+  # SHARED REDIS - Configured for replication and scaling
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: shared-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      # Redis configuration for replication support
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: >
+      sh -c " if [ -f /usr/local/etc/redis/redis.conf ]; then
+        redis-server /usr/local/etc/redis/redis.conf
+      else
+        redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+      fi "
+    restart: unless-stopped
+    networks:
+      - forecasting-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    environment:
+      - TZ=UTC
+    # Enable scaling with Docker Swarm/Kubernetes
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: ats-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+    networks:
+      - forecasting-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:6333/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    environment:
+      - QDRANT_API_KEY=${QDRANT_API_KEY:-}
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ats-ollama
+    ports:
+      - "11434:11434" # ✅ Commented out - using system Ollama on host instead
+    volumes:
+      - ollama_data:/root/.ollama
+      - ./scripts/ollama-entrypoint.sh:/usr/local/bin/ollama-entrypoint.sh:ro
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-nomic-embed-text}
+      - TZ=UTC
+      # GPU Configuration
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    entrypoint: [ "/bin/sh", "/usr/local/bin/ollama-entrypoint.sh" ]
+    restart: unless-stopped
+    networks:
+      - forecasting-network
+    healthcheck:
+      test: [ "CMD-SHELL", "ollama list > /dev/null 2>&1 || curl -f http://localhost:11434/api/tags > /dev/null 2>&1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  neo4j:
+    image: neo4j:latest
+    container_name: ats-neo4j
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_config:/config
+      - neo4j_plugins:/plugins
+    environment:
+      - NEO4J_AUTH=${NEO4J_AUTH:-neo4j/password}
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=2G
+      - NEO4J_dbms_memory_pagecache_size=1G
+      - TZ=UTC
+    ports:
+      - "7474:7474" # HTTP
+      - "7687:7687" # Bolt
+    restart: unless-stopped
+    networks:
+      - forecasting-network
+    healthcheck:
+      # Use default credentials (neo4j/password) for healthcheck
+      # NEO4J_AUTH sets the actual credentials, but healthcheck uses defaults
+      test: [ "CMD-SHELL", "cypher-shell -u neo4j -p password 'RETURN 1' || exit 1" ]
+      interval: 60s
+      timeout: 10s
+      retries: 6
+      start_period: 60s
+
+  # Phase 5: Enhanced Agentic Trading API with Workspace Memory & Context Managers
+  polymarket-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ats-trading-api
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    environment:
+      # Core Services
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - WORKSPACE_MEMORY_ENABLED=true
+      - PIPELINE_CONTEXT_MANAGER=enabled
+      - RESPONSE_FORMAT_VERSION=v2
+
+      # External Services (optional)
+      # Use host.docker.internal for local host services; use service name if provided
+      - MCP_API_URL=${MCP_API_URL:-https://forecasting.guidry-cloud.com}
+      - MCP_API_KEY=${MCP_API_KEY:-}
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - OLLAMA_URL=http://ollama:11434
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_DATABASE=neo4j
+      - AGENTIC_API_URL=http://ats-trading-api:8000
+
+      # Polymarket settings
+      - EXECUTION_MODE=${EXECUTION_MODE:-LIVE}
+      - DEMO_MODE=${DEMO_MODE:-FALSE}
+      - POLYMARKET_CHAIN_ID=${POLYMARKET_CHAIN_ID:-137}
+      - POLYGON_PRIVATE_KEY=${POLYGON_PRIVATE_KEY:-}
+      - POLYGON_ADDRESS=${POLYGON_ADDRESS:-}
+      - CLOB_API_URL=${CLOB_API_URL:-https://clob.polymarket.com}
+      - GAMMA_API_URL=${GAMMA_API_URL:-https://gamma-api.polymarket.com}
+
+      # Logging & Monitoring
+      - LOGFIRE_TOKEN=${LOGFIRE_TOKEN:-}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - TZ=UTC
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - CLOB_READONLY_API_KEY=${CLOB_READONLY_API_KEY:-}
+      - POLYMARKET_API_KEY=${POLYMARKET_API_KEY:-}
+      - NEO4J_AUTH=${NEO4J_AUTH:-neo4j/password}
+      - FORECASTING_MODE=${FORECASTING_MODE:-disabled}
+      - MCP_IN_API_DISABLED=true
+
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./config:/app/config:ro
+
+    # runtime: nvidia
+    depends_on:
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      ollama:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+
+    restart: unless-stopped
+    networks:
+      - forecasting-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    healthcheck:
+      # Use wget --spider which returns 0 if server responds (even with 503)
+      # This allows container to start even if Redis is temporarily unavailable
+      # The health endpoint returns 200 with status="unhealthy" for monitoring
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider --timeout=5 http://localhost:8000/health || exit 1" ]
+      interval: 30s
+      timeout: 15s
+      retries: 8
+      start_period: 240s # Increased to 4 minutes to allow full startup
+
+# uncomment to get the workforce running as local MCP Agent to Agent
+  # workforce-mcp:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: ats-workforce-mcp
+  #   env_file:
+  #     - .env
+  #   command: [ "python", "scripts/workforce_mcp_server.py" ]
+  #   ports:
+  #     - "8001:8001"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - REDIS_DB=0
+  #     - QDRANT_HOST=qdrant
+  #     - QDRANT_PORT=6333
+  #     - OLLAMA_URL=http://ollama:11434
+  #     - NEO4J_URI=bolt://neo4j:7687
+  #     - NEO4J_DATABASE=neo4j
+  #     - AGENTIC_API_URL=http://ats-trading-api:8000
+  #     - MCP_HOST=0.0.0.0
+  #     - MCP_PORT=8001
+  #     - MCP_NAME=CAMEL-Workforce
+  #     - MCP_DESCRIPTION=A workforce system using the CAM multi-agent collaboration.
+  #     - TZ=UTC
+  #     - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+  #     - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+  #     - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+  #     - POLYMARKET_API_KEY=${POLYMARKET_API_KEY:-}
+  #     - POLYGON_PRIVATE_KEY=${POLYGON_PRIVATE_KEY:-}
+  #     - POLYGON_ADDRESS=${POLYGON_ADDRESS:-}
+  #     - POLYMARKET_CHAIN_ID=${POLYMARKET_CHAIN_ID:-80002}
+  #     - FORECASTING_MODE=${FORECASTING_MODE:-disabled}
+  #   volumes:
+  #     - ./logs:/app/logs
+  #     - ./data:/app/data
+  #     - ./config:/app/config:ro
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #     qdrant:
+  #       condition: service_started
+  #     ollama:
+  #       condition: service_healthy
+  #     neo4j:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   networks:
+  #     - forecasting-network
+
+# ============================================
+# NETWORKS
+# ============================================
+networks:
+  forecasting-network:
+    driver: bridge
+
+# ============================================
+# VOLUMES
+# ============================================
+
+volumes:
+  redis_data:
+    driver: local
+  qdrant_data:
+    driver: local
+  ollama_data:
+    driver: local
+  neo4j_data:
+    driver: local
+  neo4j_logs:
+    driver: local
+  neo4j_config:
+    driver: local
+  neo4j_plugins:
+    driver: local
