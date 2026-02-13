@@ -10,6 +10,27 @@ This document outlines the current development priorities for the agentic tradin
 - Implement comprehensive testing and deployment procedures.
 - Add and maintain clear documentation for developers and users.
 
+## Refactor Status (Current)
+
+- [x] Move settings module to `core/settings/config.py`.
+- [x] Move UviSwap models to `core/models/uviswap.py`.
+- [x] Move workforce config models/service to `core/models/workforce_config.py`.
+- [x] Move asset registry to `core/models/asset_registry.py`.
+- [x] Move Redis client to `core/clients/redis_client.py`.
+- [x] Move observability utilities to `core/telemetry/observability.py`.
+- [x] Move performance utilities to `core/utils/performance.py`.
+- [x] Update imports across `core/`, `api/`, `scripts/`, and `tests/` for new module paths.
+- [x] Fix stale runtime import in `core/camel_runtime/registries.py` (`asset_registry` path).
+- [x] Compile validation after refactor (`python -m compileall core api scripts tests`).
+
+## Immediate Follow-ups
+
+- [ ] Restart Docker services to clear stale import/module cache after refactor.
+- [ ] Run test suite in container (`pytest`) and fix regressions.
+- [ ] Add regression test covering runtime import path for `core.camel_runtime.registries`.
+- [ ] Audit `core/__init__.py` exports and keep only actively supported package-level symbols.
+- [ ] Normalize type hints and model boundaries in moved modules (`workforce_config`, `performance`, `observability`).
+
 ## Documentation
 
 - [x] Create `LICENSE` file (MIT).
@@ -19,6 +40,10 @@ This document outlines the current development priorities for the agentic tradin
 
 ## API & UI
 
-- [ ] Formalize MCP start payload (Pydantic model) + UI form fields (name/host/port/deps).
-- [ ] Audit legacy workforce trigger endpoints and remove dead paths.
-- [ ] Add UI status panel for RSS flux batch results + latest errors.
+- [ ] CCXT integration for CEX trading.
+- [ ] Unified settings UX with explicit On/Off mode toggles.
+- [ ] UI settings pages for global/base config + Polymarket config.
+- [ ] Account management and persistence strategy (Postgres or alternative).
+- [ ] Expand test coverage for both paper and live-trade guarded paths.
+- [ ] Update `.env.example` to match current settings model and defaults.
+- [ ] Add copy-trading toolkit logic (on-chain/CEX) with whale-scanner support.

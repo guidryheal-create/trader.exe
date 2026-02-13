@@ -40,9 +40,6 @@ from core.camel_runtime.utils import (
     ToolkitInitialization,
 )
 
-# ✅ Removed: conversation_logging_toolkit - no longer needed for RSS flux trading
-# ✅ Removed: wallet_distribution_toolkit - deprecated, use Polymarket positions instead
-
 try:
     from core.camel_tools.asknews_toolkit import AskNewsToolkit
 except ImportError:  # pragma: no cover - optional dependency
@@ -270,39 +267,6 @@ class ToolkitRegistry:
         
         # ✅ Import tool validator
         from core.pipelines.tool_validator import validate_tool, validate_tool_schema
-        
-        # Build core tools with error handling and validation
-        # Forecasting-dependent tools only when FORECASTING_MODE != "disabled"
-        core_tools_map = {
-            "get_guidry_cloud_api_stats": self._tool_get_guidry_stats,
-        }
-        if self._is_forecasting_enabled() and self._forecasting_client:
-            core_tools_map.update({
-                "list_supported_assets": self._tool_list_supported_assets,
-                "get_ohlc": self._tool_get_ohlc,
-                "get_model_metrics": self._tool_get_model_metrics,
-            })
-
-
-        for tool_name, tool_fn in core_tools_map.items():
-            try:
-                tool = self._tool(tool_name, tool_fn)
-                
-                # ✅ Validate tool before adding to toolset
-                if not validate_tool(tool):
-                    log.warning(f"Tool validation failed for {tool_name}, skipping")
-                    continue
-                
-                if not validate_tool_schema(tool):
-                    log.warning(f"Tool schema validation failed for {tool_name}, skipping")
-                    continue
-                
-                tools.append(tool)
-                log.debug(f"✅ Built and validated tool: {tool_name}")
-            except Exception as e:
-                log.error(f"Failed to build tool {tool_name}: {type(e).__name__}: {e}", exc_info=True)
-                # Continue with other tools even if one fails
-                continue
 
         # ✅ Add optional toolkit tools - verify they're FunctionTool instances and validate them
         FT = FunctionTool
@@ -597,37 +561,6 @@ class ToolkitRegistry:
         except (TypeError, AttributeError) as exc:
             log.error("Failed to wrap tool %s: %s", name, exc)
             raise
-
-        # Normalise schema/name so downstream agents see stable identifiers.
-        # ✅ CRITICAL: Ensure full docstring is in the description field for LLM
-        try:
-            schema = tool.get_openai_tool_schema()
-        except Exception as exc:  # pragma: no cover - defensive logging
-            log.warning("Unable to fetch schema for tool %s: %s", name, exc)
-            schema = None
-
-        if schema:
-            schema = dict(schema)
-            function_schema = dict(schema.get("function", {}))
-            function_schema["name"] = name
-            
-            # ✅ CRITICAL: Include full docstring in description so LLM sees parameter extraction instructions
-            # The docstring contains critical parameter extraction rules
-            doc = None
-            if inspect.ismethod(fn):
-                doc = fn.__doc__
-            elif hasattr(fn, '__doc__'):
-                doc = fn.__doc__
-            
-            if doc:
-                # Use the full docstring as description (includes parameter extraction rules)
-                function_schema["description"] = doc.strip()
-            elif "description" not in function_schema or not function_schema["description"]:
-                # Fallback to function name if no docstring
-                function_schema["description"] = name
-            
-            schema["function"] = function_schema
-            tool.openai_tool_schema = schema
 
         if hasattr(tool, "name"):
             try:
