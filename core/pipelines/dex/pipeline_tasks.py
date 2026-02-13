@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from core.config import settings
+from core.settings.config import settings
 from core.pipelines.dex.types import ReviewMode
 from core.pipelines.tasks import BasePipelineTask
 

@@ -8,7 +8,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from core.services.workforce_config_service import (
+from core.models.workforce_config import (
     WorkforceConfigService,
 )
 from core.logging import log

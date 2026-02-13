@@ -10,7 +10,7 @@ import asyncio
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 from core.camel_tools.neo4j_memory_toolkit import Neo4jMemoryToolkit, NEO4J_AVAILABLE
-from core.config import settings
+from core.settings.config import settings
 
 async def test_neo4j_memory():
     """Test Neo4j Memory Toolkit initialization and tools."""

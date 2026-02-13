@@ -22,7 +22,7 @@ except ImportError:
     CAMEL_TOOLS_AVAILABLE = False
 
 from core.logging import log
-from core.redis_client import RedisClient
+from core.clients.redis_client import RedisClient
 from core.memory.workspace_memory import WorkspaceMemory
 from api.services.agentic_service import AgenticService
 from api.services.wallet_service import WalletService

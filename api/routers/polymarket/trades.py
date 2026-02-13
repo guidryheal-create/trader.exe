@@ -1,5 +1,6 @@
 """Polymarket router package - Trade execution"""
-from typing import Any, Dict, List
+from datetime import datetime, timezone
+from typing import Any, Dict
 
 from fastapi import APIRouter, Query, HTTPException
 
@@ -12,13 +13,103 @@ from api.models.polymarket import (
 from api.services.polymarket.logging_service import logging_service
 from api.services.polymarket.decision_service import decision_service
 from api.services.polymarket.config_service import process_config_service
-from core.services.polymarket_trade_service import PolymarketTradeService
+from core.clients.polymarket_client import PolymarketClient
 from core.camel_tools.polymarket_data_toolkit import PolymarketDataToolkit
 
 router = APIRouter()
-trade_service = PolymarketTradeService()
+client = PolymarketClient()
 data_toolkit = PolymarketDataToolkit()
 data_toolkit.initialize()
+
+
+def _require_auth() -> None:
+    client.refresh_from_env()
+    if not client.is_authenticated:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Polymarket client not authenticated. Set POLYGON_PRIVATE_KEY and CLOB credentials.",
+                "diagnostics": client.auth_diagnostics(),
+            },
+        )
+
+
+def _to_float(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _trade_notional(trade: Dict[str, Any]) -> float:
+    if "total_value" in trade:
+        return _to_float(trade.get("total_value"), 0.0)
+    price = _to_float(trade.get("price") or trade.get("execution_price"), 0.0)
+    size = _to_float(
+        trade.get("size")
+        or trade.get("quantity")
+        or trade.get("amount")
+        or trade.get("shares"),
+        0.0,
+    )
+    return price * size
+
+
+def _trade_side(trade: Dict[str, Any]) -> str:
+    return str(trade.get("side") or trade.get("maker_side") or "").upper()
+
+
+def _summarize_trades(trades: list[Dict[str, Any]]) -> Dict[str, Any]:
+    summary = {
+        "total_trades": len(trades),
+        "filled": 0,
+        "rejected": 0,
+        "cancelled": 0,
+        "failed": 0,
+        "pending": 0,
+        "buy_trades": 0,
+        "sell_trades": 0,
+        "total_buy_value": 0.0,
+        "total_sell_value": 0.0,
+        "net_value": 0.0,
+        "assets": {},
+    }
+    for trade in trades:
+        status = str(trade.get("status") or trade.get("state") or "filled").lower()
+        if status in summary:
+            summary[status] += 1
+        side = _trade_side(trade)
+        notional = _trade_notional(trade)
+        market_key = str(trade.get("market") or trade.get("market_id") or "unknown")
+        asset_bucket = summary["assets"].setdefault(
+            market_key,
+            {"count": 0, "buy_value": 0.0, "sell_value": 0.0},
+        )
+        asset_bucket["count"] += 1
+        if side == "BUY":
+            summary["buy_trades"] += 1
+            summary["total_buy_value"] += notional
+            asset_bucket["buy_value"] += notional
+        elif side == "SELL":
+            summary["sell_trades"] += 1
+            summary["total_sell_value"] += notional
+            asset_bucket["sell_value"] += notional
+    summary["net_value"] = summary["total_sell_value"] - summary["total_buy_value"]
+    summary["total_buy_value"] = round(summary["total_buy_value"], 6)
+    summary["total_sell_value"] = round(summary["total_sell_value"], 6)
+    summary["net_value"] = round(summary["net_value"], 6)
+    return summary
+
+
+async def _resolve_token_id(market_id: str, outcome: str) -> str:
+    token_ids = await client.get_outcome_token_ids(market_id=market_id)
+    if not token_ids:
+        raise HTTPException(status_code=404, detail=f"No outcome token IDs found for market {market_id}")
+    key = "YES" if outcome.lower() == "yes" else "NO"
+    token_id = token_ids.get(key) or token_ids.get(key.lower())
+    if not token_id:
+        raise HTTPException(status_code=404, detail=f"Token ID for outcome {key} not found")
+    return str(token_id)
 
 
 @router.post("/trades/limit")
@@ -32,24 +123,14 @@ async def create_limit_order(order_data: CreateLimitOrderRequest):
     Returns:
         Created order details with order ID
     """
-    await trade_service.initialize()
-    if order_data.side.value.lower() == "yes":
-        result = await trade_service.buy_market(
-            market_id=order_data.market_id,
-            asset="UNKNOWN",
-            quantity=int(order_data.shares),
-            price=order_data.price,
-            outcome="YES",
-            bet_id=order_data.market_id,
-        )
-    else:
-        result = await trade_service.sell_market(
-            market_id=order_data.market_id,
-            asset="UNKNOWN",
-            quantity=int(order_data.shares),
-            price=order_data.price,
-            bet_id=order_data.market_id,
-        )
+    _require_auth()
+    token_id = await _resolve_token_id(order_data.market_id, order_data.side.value)
+    result = await client.place_order(
+        token_id=token_id,
+        side="BUY",
+        quantity=float(order_data.shares),
+        price=float(order_data.price),
+    )
     logging_service.log_event("INFO", "Created limit order", result)
     return result
 
@@ -65,26 +146,16 @@ async def create_market_order(order_data: CreateMarketOrderRequest):
     Returns:
         Executed order details with actual price
     """
-    await trade_service.initialize()
-    market_data = data_toolkit.get_market_data(order_data.market_id)
-    price = market_data.get("mid_price") or 0.5
-    if order_data.side.value.lower() == "yes":
-        result = await trade_service.buy_market(
-            market_id=order_data.market_id,
-            asset="UNKNOWN",
-            quantity=int(order_data.shares),
-            price=price,
-            outcome="YES",
-            bet_id=order_data.market_id,
-        )
-    else:
-        result = await trade_service.sell_market(
-            market_id=order_data.market_id,
-            asset="UNKNOWN",
-            quantity=int(order_data.shares),
-            price=price,
-            bet_id=order_data.market_id,
-        )
+    _require_auth()
+    token_id = await _resolve_token_id(order_data.market_id, order_data.side.value)
+    price_payload = await client.get_price(token_id=token_id, side="BUY")
+    price = _to_float(price_payload.get("price"), 0.5)
+    result = await client.place_order(
+        token_id=token_id,
+        side="BUY",
+        quantity=float(order_data.shares),
+        price=price,
+    )
     logging_service.log_event("INFO", "Created market order", result)
     return result
 
@@ -100,7 +171,9 @@ async def get_trade_history(limit: int = Query(50, ge=1, le=500)):
     Returns:
         List of past trades with execution details
     """
-    return {"trades": trade_service.list_trades(limit=limit), "limit": limit}
+    _require_auth()
+    trades = await client.get_trades()
+    return {"trades": trades[:limit], "limit": limit}
 
 
 @router.delete("/trades/{trade_id}")
@@ -114,7 +187,8 @@ async def cancel_trade(trade_id: str):
     Returns:
         Cancelled trade details
     """
-    result = await trade_service.cancel_trade(trade_id)
+    _require_auth()
+    result = await client.cancel_order(trade_id)
     return result
 
 
@@ -129,14 +203,18 @@ async def batch_orders(batch_request: dict):
     Returns:
         Results for all orders
     """
+    _require_auth()
     orders = batch_request.get("orders", [])
     results = []
     for order in orders:
         req = CreateLimitOrderRequest(**order)
-        if req.side.value.lower() == "yes":
-            res = await trade_service.buy_market(req.market_id, "UNKNOWN", int(req.shares), req.price)
-        else:
-            res = await trade_service.sell_market(req.market_id, "UNKNOWN", int(req.shares), req.price)
+        token_id = await _resolve_token_id(req.market_id, req.side.value)
+        res = await client.place_order(
+            token_id=token_id,
+            side="BUY",
+            quantity=float(req.shares),
+            price=float(req.price),
+        )
         results.append(res)
     return {"count": len(results), "results": results}
 
@@ -149,7 +227,9 @@ async def get_open_orders():
     Returns:
         List of orders awaiting execution or settlement
     """
-    return {"orders": trade_service.get_pending_trades()}
+    _require_auth()
+    orders = await client.get_open_orders()
+    return {"orders": orders}
 
 
 @router.post("/trades/propose")
@@ -189,7 +269,7 @@ async def propose_trade(payload: TradeProposalRequest):
 
 @router.post("/trades/execute")
 async def execute_trade(payload: TradeExecuteRequest):
-    await trade_service.initialize()
+    _require_auth()
     if payload.proposal_id:
         proposal = decision_service.get_proposal(payload.proposal_id)
         if not proposal:
@@ -220,29 +300,37 @@ async def execute_trade(payload: TradeExecuteRequest):
     max_ai_daily = process_cfg.get("max_ai_weighted_daily", 1.0)
     max_daily_value = process_config_service.get_workforce_config().trading_controls.max_exposure_total
     daily_cap = max_daily_value * max_ai_daily
-    from datetime import datetime, timezone
     today = datetime.now(timezone.utc).date().isoformat()
     today_total = 0.0
-    for t in trade_service.list_trades(limit=500):
+    historical_trades = await client.get_trades()
+    for t in historical_trades:
         try:
             ts = t.get("timestamp", "")
             if ts and ts.split("T")[0] == today:
-                today_total += t.get("total_value", 0.0)
+                today_total += _trade_notional(t)
         except Exception:
             continue
     if today_total + trade_value > daily_cap:
         raise HTTPException(status_code=400, detail="Trade exceeds AI-weighted daily limit")
 
-    if outcome.lower() == "yes":
-        result = await trade_service.buy_market(
-            market_id, "UNKNOWN", quantity, price, outcome="YES", bet_id=bet_id
-        )
-    else:
-        result = await trade_service.sell_market(
-            market_id, "UNKNOWN", quantity, price, bet_id=bet_id
-        )
-    logging_service.log_event("INFO", "Executed trade", result)
-    return result
+    token_id = await _resolve_token_id(market_id, outcome)
+    order_result = await client.place_order(
+        token_id=token_id,
+        side="BUY",
+        quantity=float(quantity),
+        price=float(price),
+    )
+    response = {
+        "success": True,
+        "market_id": market_id,
+        "bet_id": bet_id,
+        "outcome": outcome.lower(),
+        "quantity": int(quantity),
+        "price": float(price),
+        "order": order_result,
+    }
+    logging_service.log_event("INFO", "Executed trade", response)
+    return response
 
 
 @router.get("/trades")
@@ -251,21 +339,24 @@ async def list_trades(
     asset: str | None = Query(None),
     limit: int = Query(50, ge=1, le=500),
 ):
-    return {
-        "trades": trade_service.list_trades(limit=limit, status=status, asset=asset),
-        "total": len(trade_service.list_trades(limit=limit, status=status, asset=asset)),
-        "limit": limit,
-    }
+    _require_auth()
+    trades = await client.get_trades(market=asset)
+    if status:
+        status_lower = status.lower()
+        trades = [trade for trade in trades if str(trade.get("status", "")).lower() == status_lower]
+    paged = trades[:limit]
+    return {"trades": paged, "total": len(trades), "limit": limit}
 
 
 @router.get("/trades/{trade_id}")
 async def get_trade_details(trade_id: str):
-    trade = trade_service.get_trade(trade_id)
-    if not trade:
-        raise HTTPException(status_code=404, detail="Trade not found")
+    _require_auth()
+    trade = await client.get_order(trade_id)
     return trade
 
 
 @router.get("/summary")
 async def get_trading_summary():
-    return trade_service.get_summary()
+    _require_auth()
+    trades = await client.get_trades()
+    return _summarize_trades(trades)

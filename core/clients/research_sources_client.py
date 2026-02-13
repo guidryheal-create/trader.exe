@@ -17,7 +17,7 @@ from urllib.parse import quote_plus
 
 import httpx
 
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
 
 USER_AGENT_HEADERS = {
@@ -27,7 +27,7 @@ USER_AGENT_HEADERS = {
     )
 }
 
-
+# add them in the toolkit in the future
 async def fetch_yahoo_finance_headlines(
     client: httpx.AsyncClient,
     tickers: Optional[Iterable[str]] = None,

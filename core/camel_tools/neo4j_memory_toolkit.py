@@ -52,7 +52,7 @@ except ImportError as e:
     NEO4J_AVAILABLE = False
     Neo4jMemory = None  # type: ignore
 
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
 
 logger = get_logger(__name__)

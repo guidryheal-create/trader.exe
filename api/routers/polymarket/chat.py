@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query
 from api.models.polymarket import ChatRequest, ChatResponse
 from api.services.polymarket.logging_service import logging_service
 from api.services.polymarket.chat_service import chat_service
-from core.redis_client import RedisClient
+from core.clients.redis_client import RedisClient
 from core.memory.workspace_memory import WorkspaceMemory
 from core.logging import log
 

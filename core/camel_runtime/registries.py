@@ -17,11 +17,11 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from camel.toolkits import FunctionTool
 
-from core.config import settings
+from core.settings.config import settings
 from core.clients.forecasting_client import ForecastingClient
 from core.logging import log
-from core import asset_registry
-from core.telemetry.guidry_stats import guidry_cloud_stats
+from core.models import asset_registry
+from core.clients.guidry_stats_client import guidry_cloud_stats
 from core.camel_tools.market_data_toolkit import MarketDataToolkit
 from core.camel_tools.api_forecasting_toolkit import APIForecastingToolkit
 from core.camel_tools.review_pipeline_toolkit import ReviewPipelineToolkit
@@ -283,16 +283,7 @@ class ToolkitRegistry:
                 "get_model_metrics": self._tool_get_model_metrics,
             })
 
-        # ✅ Only expose DEX tools when DEX client is available (and thus enabled)
-        if self._dex_client is not None:
-            core_tools_map.update(
-                {
-                    "dex_buy_asset": self._tool_dex_buy_asset,
-                    "dex_sell_asset": self._tool_dex_sell_asset,
-                    "dex_get_portfolio": self._tool_dex_get_portfolio,
-                }
-            )
-        
+
         for tool_name, tool_fn in core_tools_map.items():
             try:
                 tool = self._tool(tool_name, tool_fn)
@@ -706,37 +697,6 @@ class ToolkitRegistry:
         symbol = asset_registry.get_symbol(ticker.upper())
         metrics = await self._forecasting_client.get_model_metrics(symbol, interval)
         return {"success": True, "ticker": ticker, "interval": interval, "metrics": metrics}
-
-    # ---------------------------------------------------------------------
-    # DEX helpers
-    # ---------------------------------------------------------------------
-
-    async def _tool_dex_buy_asset(self, ticker: str, amount_usdc: float) -> Dict[str, Any]:
-        """
-        Execute a simulated buy via the DEX client.
-        """
-        if not self._dex_client:
-            raise RuntimeError("DEX client is not initialised")
-        result = await self._dex_client.buy_asset(ticker.upper(), amount_usdc)
-        return {"success": result.get("success", False), "trade": result}
-
-    async def _tool_dex_sell_asset(self, ticker: str, amount: float) -> Dict[str, Any]:
-        """Execute a simulated sell via the DEX client."""
-        if not self._dex_client:
-            raise RuntimeError("DEX client is not initialised")
-        result = await self._dex_client.sell_asset(ticker.upper(), amount)
-        return {"success": result.get("success", False), "trade": result}
-
-    async def _tool_dex_get_portfolio(self) -> Dict[str, Any]:
-        """Query the current simulated portfolio state."""
-        if not self._dex_client:
-            raise RuntimeError("DEX client is not initialised")
-        portfolio = await self._dex_client.get_portfolio_status()
-        return {"success": True, "portfolio": portfolio}
-
-    async def _tool_get_guidry_stats(self) -> Dict[str, Any]:
-        """Return aggregated telemetry for the forecasting API."""
-        return {"success": True, "stats": guidry_cloud_stats.summary()}
 
 
 

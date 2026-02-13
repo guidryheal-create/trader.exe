@@ -12,7 +12,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 from core.logging import log
-from core.config import settings
+from core.settings.config import settings
 
 T = TypeVar('T')
 

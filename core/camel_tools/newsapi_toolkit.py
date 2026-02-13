@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta
 
 from core.logging import log
-from core.config import settings
+from core.settings.config import settings
 
 try:  # pragma: no cover - optional dependency
     from camel.toolkits import FunctionTool

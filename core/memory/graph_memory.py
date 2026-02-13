@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any, Dict, Iterable, List, Optional
 
 from core.logging import log
-from core.models import GraphMemoryEdge, GraphMemoryNode
+from core.models.base import GraphMemoryEdge, GraphMemoryNode
 
 
 class GraphMemoryManager:

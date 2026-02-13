@@ -20,7 +20,7 @@ from typing import Dict, Any, Optional
 
 # Import from actual modules
 from core.logging import logger, log
-from core.config import settings
+from core.settings.config import settings
 
 
 class DockerServiceHealthCheck:

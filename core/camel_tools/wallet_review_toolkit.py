@@ -43,7 +43,7 @@ class WalletReviewToolkit(BaseToolkit):
         if redis_client_override:
             self.redis = redis_client_override
         else:
-            from core.redis_client import RedisClient
+            from core.clients.redis_client import RedisClient
             self.redis = RedisClient()
     
     async def initialize(self) -> None:

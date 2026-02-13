@@ -17,7 +17,7 @@ def _get_settings():
     """Get settings lazily."""
     global _settings
     if _settings is None:
-        from core.config import settings as s
+        from core.settings.config import settings as s
         _settings = s
     return _settings
 

@@ -31,7 +31,7 @@ sys.path.insert(0, str(ROOT))
 os.chdir(str(ROOT))
 
 from core.logging import setup_logging, log  # type: ignore
-from core.redis_client import RedisClient  # type: ignore
+from core.clients.redis_client import RedisClient  # type: ignore
 
 
 async def export_chat_and_decisions(output_path: Path, max_users: int = 200, max_decisions: int = 500) -> None:

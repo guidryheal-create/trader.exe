@@ -10,7 +10,7 @@ from prometheus_client import Counter, Histogram, Gauge, CollectorRegistry, gene
 import logging
 
 from core.logging import log
-from core.config import settings
+from core.settings.config import settings
 
 # Prometheus metrics
 registry = CollectorRegistry()
@@ -350,21 +350,11 @@ class HealthChecker:
     async def check_redis_health() -> Dict[str, Any]:
         """Check Redis health."""
         try:
-            from core.redis_client import redis_client
+            from core.clients.redis_client import redis_client
             await redis_client.ping()
             return {"status": "healthy", "latency_ms": 0}
         except Exception as e:
             return {"status": "unhealthy", "error": str(e)}
-    
-    @staticmethod
-    async def check_exchange_health(exchange_name: str) -> Dict[str, Any]:
-        """Check exchange health."""
-        try:
-            from core.exchange_manager import exchange_manager
-            # This would need to be implemented in exchange_manager
-            return {"status": "healthy", "exchange": exchange_name}
-        except Exception as e:
-            return {"status": "unhealthy", "exchange": exchange_name, "error": str(e)}
     
     @staticmethod
     async def check_forecasting_api_health() -> Dict[str, Any]:
@@ -389,11 +379,6 @@ class HealthChecker:
         redis_health = await HealthChecker.check_redis_health()
         health["services"]["redis"] = redis_health
         
-        # Check exchanges
-        health["services"]["exchanges"] = {}
-        for exchange in ["DEX", "MEXC"]:
-            exchange_health = await HealthChecker.check_exchange_health(exchange)
-            health["services"]["exchanges"][exchange] = exchange_health
         
         # Check forecasting API
         forecasting_health = await HealthChecker.check_forecasting_api_health()

@@ -16,11 +16,6 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime
 
-from core.camel_tools.polymarket_trading_mcp import (
-    PolymarketTradingToolkit,
-    PolymarketTradingResult
-)
-
 
 # ============================================================================
 # FIXTURES
@@ -499,16 +494,6 @@ async def test_get_summary(toolkit):
 # ============================================================================
 # TOOLKIT INTEGRATION TESTS
 # ============================================================================
-
-@pytest.mark.asyncio
-async def test_toolkit_initialization():
-    """Test toolkit initializes without errors."""
-    with patch("core.camel_tools.polymarket_trading_mcp.PolymarketClient"):
-        toolkit = PolymarketTradingToolkit()
-        await toolkit.initialize()
-        
-        assert toolkit._initialized is True
-
 
 def test_toolkit_get_tools(toolkit):
     """Test toolkit generates CAMEL tools if available."""

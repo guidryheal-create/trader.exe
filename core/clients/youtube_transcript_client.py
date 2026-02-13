@@ -10,7 +10,7 @@ import subprocess
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from core.logging import log
-from core.config import settings
+from core.settings.config import settings
 
 
 class YouTubeTranscriptMCPError(Exception):

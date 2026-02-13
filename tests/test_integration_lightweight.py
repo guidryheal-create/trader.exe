@@ -19,7 +19,7 @@ from typing import Dict, Any, List
 
 # Core imports
 from core.logging import logger
-from core.config import settings
+from core.settings.config import settings
 from core.clients.polymarket_client import PolymarketClient
 from core.camel_tools.polymarket_toolkit import EnhancedPolymarketToolkit
 from core.camel_tools.polymarket_data_toolkit import PolymarketDataToolkit

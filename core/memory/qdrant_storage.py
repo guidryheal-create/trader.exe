@@ -6,7 +6,7 @@ Integrates Qdrant vector database with CAMEL's storage interface.
 from __future__ import annotations
 
 from typing import Optional, Dict, Any
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
 
 try:

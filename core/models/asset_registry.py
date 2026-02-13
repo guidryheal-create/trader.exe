@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 from typing import Dict, Iterable, List, Optional, Set
 
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
 
 _asset_lock = asyncio.Lock()

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from core.telemetry.guidry_stats import guidry_cloud_stats
+from core.clients.guidry_stats_client import guidry_cloud_stats
 
 try:  # pragma: no cover - optional dependency
     from camel.toolkits import FunctionTool

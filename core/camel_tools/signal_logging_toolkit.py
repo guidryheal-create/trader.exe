@@ -19,7 +19,7 @@ except ImportError:
     FunctionTool = None
     CAMEL_TOOLS_AVAILABLE = False
 
-from core.redis_client import redis_client
+from core.clients.redis_client import redis_client
 from core.logging import log
 
 logger = get_logger(__name__)
@@ -45,7 +45,7 @@ class SignalLoggingToolkit(BaseToolkit):
         if redis_client_override:
             self.redis = redis_client_override
         else:
-            from core.redis_client import RedisClient
+            from core.clients.redis_client import RedisClient
             self.redis = RedisClient()
 
     async def initialize(self) -> None:
@@ -103,7 +103,7 @@ class SignalLoggingToolkit(BaseToolkit):
                 }
 
                 # ✅ FIXED: Create fresh Redis client in thread-local event loop to avoid cross-loop issues
-                from core.redis_client import RedisClient
+                from core.clients.redis_client import RedisClient
                 thread_redis = RedisClient()
                 await thread_redis.connect()
 

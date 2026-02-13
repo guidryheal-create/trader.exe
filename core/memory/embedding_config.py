@@ -6,7 +6,7 @@ Supports OpenAI embeddings and Ollama embeddings (lightweight, no PyTorch requir
 from __future__ import annotations
 
 from typing import Optional
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
 
 try:

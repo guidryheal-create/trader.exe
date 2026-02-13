@@ -11,7 +11,7 @@ import time
 from typing import Any, List, Optional, Union
 import httpx
 from urllib.parse import urlparse, urlunparse
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
 
 try:

@@ -5,7 +5,7 @@ Provides CAMEL-compatible tools for retrieving market data and performing analys
 """
 from typing import Dict, Any, List, Optional, Annotated
 from pydantic import Field
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
 from core.clients.forecasting_client import ForecastingClient
 

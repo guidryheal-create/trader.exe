@@ -11,7 +11,7 @@ from typing import Any
 from redis import Redis
 
 from core.camel_tools.wallet_analysis_toolkit import WalletAnalysisToolkit
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
 from core.pipelines.dex.triggers import (
     apply_trigger_settings as apply_dex_trigger_settings,

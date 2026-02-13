@@ -45,7 +45,7 @@ class ROIAnalyzerToolkit(BaseToolkit):
         if redis_client_override:
             self.redis = redis_client_override
         else:
-            from core.redis_client import RedisClient
+            from core.clients.redis_client import RedisClient
             self.redis = RedisClient()
     
     async def initialize(self) -> None:
@@ -137,7 +137,7 @@ class ROIAnalyzerToolkit(BaseToolkit):
                 
                 # Fetch current prices for all tickers
                 from core.clients.forecasting_client import ForecastingClient
-                from core.config import settings
+                from core.settings.config import settings
                 
                 forecasting_client = ForecastingClient({
                     "base_url": settings.mcp_api_url,

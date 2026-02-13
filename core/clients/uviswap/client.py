@@ -6,7 +6,6 @@ project-standard logging, typed validation, and tool-ready integrations.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 
 import httpx
@@ -15,7 +14,7 @@ from redis import Redis
 from web3 import Web3
 
 from core.clients.uviswap.gas import GasManager
-from core.clients.uviswap.models import MarketContextModel
+from core.models.uviswap import MarketContextModel
 from core.clients.uviswap.permit2 import Permit2Client
 from core.clients.uviswap.pool_spy import PoolSpy
 from core.clients.uviswap.quote import Quoter
@@ -23,90 +22,17 @@ from core.clients.uviswap.routeur import Router
 from core.clients.uviswap.rpc import RPC
 from core.clients.uviswap.simulation import simulate_transaction
 from core.clients.uviswap.swap import SwapPlan, SwapRequest, compute_min_out
-from core.config import settings
+from core.settings.config import (
+    CHAIN_BY_ID,
+    DEFAULT_PERMIT2,
+    ROUTER_ADDRESSES,
+    UNIVERSAL_ROUTER_EXECUTE_ABI,
+    V3_QUOTER_ABI,
+    get_chain_config,
+    settings,
+)
 from core.logging import log
 
-
-UNIVERSAL_ROUTER_ABI = [
-    {
-        "inputs": [
-            {"internalType": "bytes", "name": "commands", "type": "bytes"},
-            {"internalType": "bytes[]", "name": "inputs", "type": "bytes[]"},
-        ],
-        "name": "execute",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function",
-    },
-    {
-        "inputs": [
-            {"internalType": "bytes", "name": "commands", "type": "bytes"},
-            {"internalType": "bytes[]", "name": "inputs", "type": "bytes[]"},
-            {"internalType": "uint256", "name": "deadline", "type": "uint256"},
-        ],
-        "name": "execute",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function",
-    },
-]
-
-
-V3_QUOTER_ABI = [
-    {
-        "inputs": [
-            {"internalType": "address", "name": "tokenIn", "type": "address"},
-            {"internalType": "address", "name": "tokenOut", "type": "address"},
-            {"internalType": "uint256", "name": "amountIn", "type": "uint256"},
-            {"internalType": "uint24", "name": "fee", "type": "uint24"},
-        ],
-        "name": "quoteExactInputSingle",
-        "outputs": [{"internalType": "uint256", "name": "amountOut", "type": "uint256"}],
-        "stateMutability": "view",
-        "type": "function",
-    }
-]
-
-
-@dataclass(frozen=True)
-class ChainConfig:
-    name: str
-    chain_id: int
-    universal_router: str
-    pool_manager: str | None
-    quoter: str | None
-    permit2: str
-
-
-ETHEREUM_MAINNET = ChainConfig(
-    name="ethereum",
-    chain_id=1,
-    universal_router="0x66a9893cc07d91d95644aedd05d03f95e1dba8af",
-    pool_manager=None,
-    quoter=None,
-    permit2="0x000000000022D473030F116dDEE9F6B43aC78BA3",
-)
-
-
-ROUTER_ADDRESSES = {
-    "ethereum": "0x66a9893cc07d91d95644aedd05d03f95e1dba8af",
-    "base": "0x6ff5693b99212da76ad316178a184ab56d299b43",
-    "optimism": "0x851116d9223fabed8e56c0e6b8ad0c31d98b3507",
-    "polygon": "0x1095692a6237d83c6a72f3f5efedb9a670c49223",
-    "arbitrum": "0xa51afafe0263b40edaef0df8781ea9aa03e381a3",
-}
-
-
-CHAIN_BY_ID = {
-    1: "ethereum",
-    8453: "base",
-    10: "optimism",
-    137: "polygon",
-    42161: "arbitrum",
-}
-
-
-DEFAULT_PERMIT2 = "0x000000000022D473030F116dDEE9F6B43aC78BA3"
 DEFAULT_POLYWHALER_URL = "https://www.polywhaler.com/api/market-data"
 
 
@@ -125,7 +51,7 @@ class UviSwapClient:
         router_address: str | None = None,
         quoter_address: str | None = None,
         pool_manager_address: str | None = None,
-        permit2_address: str = DEFAULT_PERMIT2,
+        permit2_address: str | None = None,
         uniswap_subgraph_url: str | None = None,
         polywhaler_url: str | None = None,
     ) -> None:
@@ -144,27 +70,37 @@ class UviSwapClient:
         self.w3 = self.rpc.w3
 
         self.chain = self._resolve_chain(chain)
-        resolved_router = router_address or ROUTER_ADDRESSES.get(self.chain)
+        self.chain_config = get_chain_config(self.chain)
+        log.info(f"Resolved chain name chain={self.chain} chain_id={self.rpc.chain_id}")
+        resolved_router = router_address or (
+            self.chain_config.universal_router if self.chain_config else ROUTER_ADDRESSES.get(self.chain)
+        )
         if not resolved_router:
             raise UviSwapClientError(f"Unsupported chain '{self.chain}' and no router provided")
+        log.info(f"Using router address chain={self.chain} router={resolved_router}")
 
         self.router_address = Web3.to_checksum_address(resolved_router)
         self.router = Router(
-            self.w3.eth.contract(address=self.router_address, abi=UNIVERSAL_ROUTER_ABI)
+            self.w3.eth.contract(address=self.router_address, abi=UNIVERSAL_ROUTER_EXECUTE_ABI)
         )
 
         self.quoter = None
-        if quoter_address:
-            q_addr = Web3.to_checksum_address(quoter_address)
+        resolved_quoter = quoter_address or (self.chain_config.quoter if self.chain_config else None)
+        if resolved_quoter:
+            q_addr = Web3.to_checksum_address(resolved_quoter)
             q_contract = self.w3.eth.contract(address=q_addr, abi=V3_QUOTER_ABI)
             self.quoter = Quoter(self.w3, q_contract)
 
-        self.permit2 = Permit2Client(self.w3, permit2_address)
+        resolved_permit2 = permit2_address or (
+            self.chain_config.permit2 if self.chain_config else DEFAULT_PERMIT2
+        )
+        self.permit2 = Permit2Client(self.w3, resolved_permit2)
         self.gas = GasManager(self.w3)
         self._redis = self._init_redis()
+        resolved_pool_manager = pool_manager_address or (self.chain_config.pool_manager if self.chain_config else None)
         self.pool_spy = PoolSpy(
             self.w3,
-            pool_manager_address,
+            resolved_pool_manager,
             subgraph_url=uniswap_subgraph_url or settings.uniswap_subgraph_url,
             redis_client=self._redis,
         )
@@ -174,12 +110,17 @@ class UviSwapClient:
             f"UviSwapClient initialized chain={self.chain} chain_id={self.rpc.chain_id} "
             f"wallet={self.address} router={self.router_address}"
         )
+        self._validate_operation_support()
 
     def _resolve_chain(self, chain: str | None) -> str:
         if chain:
             return chain.strip().lower()
         inferred = CHAIN_BY_ID.get(self.rpc.chain_id)
-        return inferred or "ethereum"
+        if inferred:
+            log.info(f"Inferred chain from chain_id chain_id={self.rpc.chain_id} chain={inferred}")
+            return inferred
+        log.warning(f"Unsupported chain_id={self.rpc.chain_id}; defaulting chain=ethereum")
+        return "ethereum"
 
     def _init_redis(self):
         try:
@@ -195,9 +136,34 @@ class UviSwapClient:
             log.warning(f"UviSwapClient Redis unavailable: {exc}")
             return None
 
+    def _validate_operation_support(self) -> None:
+        if not self.chain_config:
+            log.warning(f"No chain config registered for chain={self.chain}; feature validation is limited")
+            return
+        if not self.chain_config.pool_manager:
+            log.warning(f"No pool_manager configured for chain={self.chain}; pool discovery may be limited")
+        if not self.chain_config.quoter and not self.quoter:
+            log.warning(f"No quoter configured for chain={self.chain}; quoting APIs will be disabled")
+        if not self.chain_config.explorer_base_url:
+            log.warning(f"No explorer configured for chain={self.chain}; explorer URLs will be unavailable")
+
+    def get_explorer_tx_url(self, tx_hash: str) -> str | None:
+        if not self.chain_config:
+            return None
+        return self.chain_config.explorer_tx_url(tx_hash)
+
+    def get_explorer_address_url(self, address: str | None = None) -> str | None:
+        if not self.chain_config:
+            return None
+        target_address = address or self.address
+        return self.chain_config.explorer_address_url(target_address)
+
     def quote_exact_in(self, token_in: str, token_out: str, amount_in: int, fee: int = 3_000) -> int:
         if not self.quoter:
-            raise UviSwapClientError("Quoter not configured. Pass quoter_address to client.")
+            raise UviSwapClientError(
+                f"Quoter not configured for chain={self.chain}. "
+                "Pass quoter_address to client or register chain quoter in core/models/chain.py."
+            )
         amount_out = self.quoter.quote_exact_in(token_in, token_out, amount_in, fee=fee)
         log.debug(
             f"Quote token_in={token_in} token_out={token_out} "
@@ -206,6 +172,11 @@ class UviSwapClient:
         return amount_out
 
     def discover_trade_pools(self, symbols: list[str], limit: int = 100) -> dict[str, Any]:
+        if not self.chain_config or not self.chain_config.pool_manager:
+            log.warning(
+                f"Pool discovery running without configured pool_manager chain={self.chain}; "
+                "results may depend entirely on subgraph fallback."
+            )
         data = self.pool_spy.discover_and_index_pools(symbols=symbols, limit=limit)
         log.info(f"Discovered {data.get('pool_count', 0)} pools for symbols={symbols}")
         return data
@@ -352,6 +323,9 @@ class UviSwapClient:
         tx_hex = tx_hash.hex()
 
         log.info(f"Broadcasted swap tx hash={tx_hex} nonce={plan.nonce}")
+        explorer_url = self.get_explorer_tx_url(tx_hex)
+        if explorer_url:
+            log.info(f"Swap tx explorer url={explorer_url}")
         return tx_hex
 
     def approve_permit2_if_needed(self, token: str, min_allowance: int | None = None) -> str | None:

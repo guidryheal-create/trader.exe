@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any, Optional, Dict, List
 import redis.asyncio as aioredis
 from redis.asyncio import Redis
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
 
 
@@ -220,6 +220,18 @@ class RedisClient:
         except Exception as e:
             log.error(f"Redis EXISTS error for key {key}: {e}")
             return False
+
+    async def ping(self) -> bool:
+        """Ping Redis and return True when reachable."""
+        try:
+            if self.redis is None:
+                await self.connect()
+            if self.redis is None:
+                return False
+            return bool(await self.redis.ping())
+        except Exception as e:
+            log.error(f"Redis PING error: {e}")
+            return False
     
     async def publish(self, channel: str, message: Dict):
         """Publish message to Redis channel."""
@@ -341,3 +353,9 @@ class RedisClient:
 # Global Redis client instance
 redis_client = RedisClient()
 
+
+async def get_redis_client() -> RedisClient:
+    """Return a connected global Redis client instance."""
+    if redis_client.redis is None:
+        await redis_client.connect()
+    return redis_client

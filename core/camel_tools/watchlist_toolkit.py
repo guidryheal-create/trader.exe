@@ -10,7 +10,7 @@ from typing import Any
 from redis import Redis
 
 from core.camel_tools.async_wrapper import CAMEL_TOOLS_AVAILABLE, create_function_tool
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
 
 

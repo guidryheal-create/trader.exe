@@ -6,10 +6,10 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
 
-
+# move to client 
 class CMCIndicatorClient:
     """Fetches sentiment indicators from the CoinMarketCap public API."""
 

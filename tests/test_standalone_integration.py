@@ -64,13 +64,13 @@ def test_client_initialization_forecasting_enabled():
     """Test ClientInitialization.is_forecasting_enabled()."""
     from core.camel_runtime.utils import ClientInitialization
     
-    with patch('core.config.settings', forecasting_mode="api"):
+    with patch('core.settings.config.settings', forecasting_mode="api"):
         assert ClientInitialization.is_forecasting_enabled() is True
     
-    with patch('core.config.settings', forecasting_mode="mock"):
+    with patch('core.settings.config.settings', forecasting_mode="mock"):
         assert ClientInitialization.is_forecasting_enabled() is False
     
-    with patch('core.config.settings', forecasting_mode="disabled"):
+    with patch('core.settings.config.settings', forecasting_mode="disabled"):
         assert ClientInitialization.is_forecasting_enabled() is False
 
 

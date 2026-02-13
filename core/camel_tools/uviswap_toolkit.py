@@ -11,7 +11,7 @@ from typing import Any
 from core.camel_tools.async_wrapper import CAMEL_TOOLS_AVAILABLE, create_function_tool
 from core.camel_tools.watchlist_toolkit import WatchlistToolkit
 from core.clients.uviswap import SwapPlan, SwapRequest, UviSwapClient
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
 
 

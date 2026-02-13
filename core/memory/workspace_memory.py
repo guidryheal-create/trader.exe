@@ -15,7 +15,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 
 from core.logging import log
-from core.redis_client import RedisClient
+from core.clients.redis_client import RedisClient
 
 
 class WorkspaceMemory:

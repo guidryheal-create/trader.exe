@@ -22,28 +22,14 @@ def _get_settings():
     """Get settings with lazy loading."""
     global _settings
     if _settings is None:
-        # This import must happen AFTER core/__init__.py exists
-        # but BEFORE settings is used for the first time
-        # Try to import the actual settings object from the config module
+        # Import lazily to avoid circular import during bootstrap.
         try:
-            # The config.py file at the same level
-            import importlib.util
-            spec = importlib.util.spec_from_file_location(
-                "core_config_module",
-                Path(__file__).parent / "config.py"
-            )
-            if spec and spec.loader:
-                config_module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(config_module)
-                _settings = config_module.settings
-            else:
-                # Fallback: create default settings
-                from core.config import Settings
-                _settings = Settings()
+            from core.settings.config import settings as app_settings
+            _settings = app_settings
         except Exception:
             # Last resort: create default settings
             try:
-                from core.config import Settings
+                from core.settings.config import Settings
                 _settings = Settings()
             except Exception:
                 # Return a minimal mock to prevent complete failure
@@ -318,4 +304,3 @@ def _get_log():
 
 # Export log for backward compatibility
 log = _get_log()
-

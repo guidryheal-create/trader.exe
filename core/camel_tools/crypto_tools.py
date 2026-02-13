@@ -6,7 +6,7 @@ inspired by uniswap-trader-mcp, crypto-trending-mcp, and crypto-sentiment-mcp.
 """
 from typing import Dict, Any, List, Optional, Annotated
 from pydantic import Field
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
 from core.clients.forecasting_client import ForecastingClient
 

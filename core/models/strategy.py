@@ -6,7 +6,7 @@ Defines trading strategies and their CAMEL worker configurations.
 from dataclasses import dataclass
 from enum import Enum
 from typing import List
-
+from core.models.chain import ChainConfig
 
 class StrategyMode(str, Enum):
     """Trading strategy modes matching frontend enum."""
@@ -19,15 +19,6 @@ class StrategyMode(str, Enum):
     ARBITRAGE_HUNTER = "arbitrage_hunter"
     NEWS_CATALYST = "news_catalyst"
     RISK_ADJUSTED_PORTFOLIO = "risk_adjusted_portfolio"
-
-class ChainConfig:
-    name: str
-    chain_id: int
-    universal_router: str
-    pool_manager: str
-    quoter: str
-    permit2: str
-
 
 @dataclass
 class StrategyConfig:
@@ -141,4 +132,3 @@ def is_strategy_enabled(mode: StrategyMode | str) -> bool:
         except ValueError:
             return False
     return mode in ENABLED_STRATEGIES
-

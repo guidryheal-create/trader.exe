@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from core.clients.uviswap.pool_spy import PoolSpy
-from core.clients.uviswap.models import PoolModel
+from core.models.uviswap import PoolModel
 
 
 class _FakeRedis:

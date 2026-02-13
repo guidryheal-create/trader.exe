@@ -24,7 +24,7 @@ except ImportError:
     CAMEL_TOOLS_AVAILABLE = False
 
 from core.logging import log
-from core.redis_client import RedisClient
+from core.clients.redis_client import RedisClient
 
 logger = get_logger(__name__)
 

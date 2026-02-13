@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from typing import Optional
 
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
-from core.models import GraphMemoryEdge, GraphMemoryNode
+from core.models.base import GraphMemoryEdge, GraphMemoryNode
 
 try:
     from neo4j import AsyncGraphDatabase  # type: ignore

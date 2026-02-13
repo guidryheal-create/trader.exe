@@ -13,7 +13,7 @@ This ensures LLMs receive proper parameter definitions for tool calls.
 import asyncio
 from typing import Dict, Any, List, Optional, Literal
 from pydantic import BaseModel, Field
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
 from core.clients.forecasting_client import ForecastingClient, ForecastingAPIError
 from core.utils.asset_layers import get_layer1_assets, get_layer2_assets

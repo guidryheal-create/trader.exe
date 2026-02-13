@@ -11,7 +11,7 @@ from typing import Any, Dict
 
 # ✅ REMOVED: review_pipeline import (module deleted - using CAMEL workforce tasks instead)
 # from core.pipelines.review_pipeline import WeightReviewPipeline, REDIS_REVIEW_KEY
-from core.redis_client import redis_client
+from core.clients.redis_client import redis_client
 
 try:  # pragma: no cover - optional dependency
     from camel.toolkits import FunctionTool

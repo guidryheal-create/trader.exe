@@ -12,13 +12,6 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime
 
-from core.services.polymarket_trade_service import (
-    PolymarketTradeService,
-    TradeStatus,
-    TradeType,
-    TradeResult
-)
-
 
 # ============================================================================
 # FIXTURES

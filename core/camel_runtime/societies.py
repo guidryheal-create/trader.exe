@@ -146,7 +146,7 @@ class TradingWorkforceSociety:
                 if not openai_key:
                     # Try to get from settings
                     try:
-                        from core.config import settings
+                        from core.settings.config import settings
                         openai_key = getattr(settings, 'openai_api_key', None)
                         if openai_key:
                             os.environ["OPENAI_API_KEY"] = openai_key
@@ -852,7 +852,7 @@ class TradingWorkforceSociety:
         # NewsAPI toolkit
         try:
             from core.camel_tools.newsapi_toolkit import NewsAPIToolkit
-            from core.config import settings
+            from core.settings.config import settings
             newsapi_toolkit = NewsAPIToolkit(api_key=getattr(settings, 'news_api_key', None))
             await newsapi_toolkit.initialize()
             get_tools_method = getattr(newsapi_toolkit, 'get_tools', None) or getattr(newsapi_toolkit, 'get_all_tools', None)
@@ -1098,7 +1098,7 @@ class TradingWorkforceSociety:
             try:
                 from core.camel_tools.api_forecasting_toolkit import APIForecastingToolkit
                 from core.clients.forecasting_client import ForecastingClient
-                from core.config import settings
+                from core.settings.config import settings
                 
                 client = ForecastingClient({
                     "base_url": settings.mcp_api_url,
@@ -1204,7 +1204,7 @@ class TradingWorkforceSociety:
             from camel.types import ModelType
             from camel.utils import OpenAITokenCounter
             from camel.storages import InMemoryKeyValueStorage, QdrantStorage
-            from core.config import settings
+            from core.settings.config import settings
             from core.memory.qdrant_storage import QdrantStorageFactory
             
             # Create Ollama embedding

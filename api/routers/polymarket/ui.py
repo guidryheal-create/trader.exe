@@ -3,7 +3,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from core.config import settings
+from core.settings.config import settings
 from api.routers.polymarket.clob import client as polymarket_client
 from api.services.dex import dex_manager_service
 from api.system_registry import list_bot_systems

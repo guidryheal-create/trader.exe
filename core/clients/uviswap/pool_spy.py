@@ -9,7 +9,7 @@ from typing import Any
 import httpx
 from web3 import Web3
 
-from core.clients.uviswap.models import PoolModel, PoolSelectionModel
+from core.models.uviswap import PoolModel, PoolSelectionModel
 from core.logging import log
 
 

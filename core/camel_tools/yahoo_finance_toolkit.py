@@ -7,7 +7,7 @@ Focuses on finance, business, and crypto-related data.
 """
 from typing import Dict, Any, List, Optional
 from core.logging import log
-from core.config import settings
+from core.settings.config import settings
 from core.clients.yahoo_finance_client import YahooFinanceMCPClient, YahooFinanceMCPError
 
 try:

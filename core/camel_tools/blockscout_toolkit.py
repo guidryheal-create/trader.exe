@@ -7,7 +7,7 @@ Reference: https://www.blog.blockscout.com/how-to-set-up-mcp-ai-onchain-data-blo
 from typing import Dict, Any, Annotated
 from pydantic import Field
 from core.logging import log
-from core.config import settings
+from core.settings.config import settings
 from core.clients.blockscout_client import BlockscoutMCPClient, BlockscoutMCPError
 
 

@@ -12,9 +12,9 @@ from pathlib import Path
 project_root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(project_root))
 
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
-from core.redis_client import get_redis_client
+from core.clients.redis_client import get_redis_client
 
 
 async def prune_postgres_tables(days_to_keep: int = 30):

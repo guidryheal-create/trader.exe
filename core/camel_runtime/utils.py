@@ -125,7 +125,7 @@ class ClientInitialization:
         
         Returns False if FORECASTING_MODE is "disabled" or "mock".
         """
-        from core.config import settings
+        from core.settings.config import settings
         mode = getattr(settings, "forecasting_mode", default_mode)
         return mode not in ("disabled", "mock")
     
@@ -138,7 +138,7 @@ class ClientInitialization:
     def get_api_key(key_name: str, default: Optional[str] = None) -> Optional[str]:
         """Safely retrieve API key from settings or environment."""
         try:
-            from core.config import settings
+            from core.settings.config import settings
             value = getattr(settings, key_name, default)
             if value:
                 return value

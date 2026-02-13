@@ -16,10 +16,10 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from core.logging import log
-from core.config import settings
-from core.redis_client import redis_client
+from core.settings.config import settings
+from core.clients.redis_client import redis_client
 from core.camel_runtime.societies import society_factory
-from core.models import AgentSignal
+from core.models.base import AgentSignal
 
 
 class CamelTradingRuntime:
@@ -375,7 +375,7 @@ class CamelTradingRuntime:
     async def _async_save_conversation(self, conversation_key: str, conversation_data: dict) -> None:
         """Async helper to save agentic conversation to Redis for logging endpoints."""
         try:
-            from core.redis_client import redis_client
+            from core.clients.redis_client import redis_client
             # Save with 7-day TTL for conversation logs
             # Use redis_client.redis.setex (Redis client method)
             await redis_client.redis.setex(

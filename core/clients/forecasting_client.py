@@ -9,8 +9,8 @@ import httpx
 from httpx import TimeoutException, RemoteProtocolError, ConnectError, NetworkError
 from core.logging import log
 from core.mocks.mock_forecasting_service import get_mock_forecasting_service
-from core.telemetry.guidry_stats import guidry_cloud_stats
-from core.asset_registry import get_assets, get_symbol
+from core.clients.guidry_stats_client import guidry_cloud_stats
+from core.models.asset_registry import get_assets, get_symbol
 
 
 class ForecastingAPIError(Exception):
@@ -33,7 +33,7 @@ class ForecastingClient:
         # ✅ Ensure base_url is set from config, fallback to settings, then default
         self.base_url = config.get("base_url")
         if not self.base_url:
-            from core.config import settings
+            from core.settings.config import settings
             # Prefer Hygdra / forecasting API URL when available, then legacy MCP URL
             self.base_url = (
                 getattr(settings, "forecasting_api_url", None)
@@ -73,7 +73,7 @@ class ForecastingClient:
         """Initialize the HTTP client."""
         try:
             # ✅ CRITICAL: Always reload base_url from settings to ensure we use the latest .env value
-            from core.config import settings
+            from core.settings.config import settings
             # Prefer explicit Hygdra/forecasting API settings if present
             current_url = (
                 getattr(settings, "forecasting_api_url", None)
@@ -1196,7 +1196,7 @@ class ForecastingClient:
                 # Try Redis fallback if API fails
                 log.debug(f"API failed for {ticker}/{interval}, trying Redis fallback: {api_error}")
                 try:
-                    from core.redis_client import RedisClient
+                    from core.clients.redis_client import RedisClient
                     redis_client = RedisClient()
                     await redis_client.connect()
                     
@@ -1667,7 +1667,7 @@ class ForecastingClient:
 
 
 # Global forecasting client instance
-from core.config import settings
+from core.settings.config import settings
 
 forecasting_client = ForecastingClient({
     "base_url": settings.mcp_api_url,

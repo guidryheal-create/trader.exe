@@ -7,7 +7,7 @@ so that agentic workflows can reason about:
 - Layer 2 tokens grouped by main network (e.g. ETH L2s)
 
 They deliberately return base tickers (e.g. \"BTC\") while using
-`core.asset_registry.get_assets()` to intersect with what the
+`core.models.asset_registry.get_assets()` to intersect with what the
 forecasting API currently exposes/enables.
 """
 
@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from core.asset_registry import get_assets
+from core.models.asset_registry import get_assets
 
 # Conservative L1 universe: only majors that we expect to have
 # good liquidity and forecasting coverage.
@@ -78,6 +78,5 @@ def get_layer2_assets(network: str, enabled_only: bool = True) -> List[str]:
     network_key = network.upper()
     bases = LAYER2_BY_NETWORK.get(network_key, [])
     return _filter_enabled(bases) if enabled_only else bases
-
 
 

@@ -18,7 +18,7 @@ import json
 import time
 from decimal import Decimal, ROUND_DOWN
 from core.logging import log
-from core.config import settings
+from core.settings.config import settings
 from core.models.polymarket import SimpleMarket, SimpleEvent, SimpleMarketQuery, SimpleEventQuery
 
 from web3 import Web3

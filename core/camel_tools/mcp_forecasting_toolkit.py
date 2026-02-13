@@ -8,7 +8,7 @@ for agentic system compatibility.
 from typing import Dict, Any, List, Optional, Annotated, Literal
 from pydantic import Field
 from datetime import datetime, timezone, timedelta
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
 from core.clients.forecasting_client import ForecastingClient, ForecastingAPIError
 from core.utils.asset_layers import get_layer1_assets, get_layer2_assets

@@ -6,7 +6,7 @@ Wraps CAMEL's LongtermAgentMemory with Qdrant storage and Redis chat history.
 from __future__ import annotations
 
 from typing import Optional, List, Dict, Any
-from core.config import settings
+from core.settings.config import settings
 from core.logging import log
 from core.memory.qdrant_storage import QdrantStorageFactory
 from core.memory.embedding_config import EmbeddingFactory

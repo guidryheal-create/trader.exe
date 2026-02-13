@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from core.config import settings
+from core.settings.config import settings
 
 
 class ReviewMode(str, Enum):
