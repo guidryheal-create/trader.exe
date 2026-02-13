@@ -52,6 +52,24 @@ This document outlines the current development priorities for the agentic tradin
 - [ ] gather more metrics optimised for LLM to correct forecasting signal errors
 - [ ] enhance base context in LLM with bearish vs borrow signal header to optimise LLMsearches
 
+# bot cycle
+- [ ] copy bot cycle
+- [ ] quant cycle
+- [ ] strong sentiment cycle
+- [ ] strong news cycle
+- [ ] strong sniping / explorer cycle
+- [ ] whaler scanner cycle 
+    -> add to the whale list and prune interisting trader with high ROI and good trade quality
+- [ ] memory prunning cycle
+
+# strategie routeur and wheight
+- [ ] auto balance mode instead of hard coded to adapt market signals 
+    -> copy bot vs quant vs forecast vs sentiment vs news vs hybrid vs sniper and etc
+- [ ] auto weight and balance schema
+
+# GRPO training, RL and optimisation
+- [ ] auto enhancement + unbiassed LLM specialised on trading and toolkits
+
 # other tools and ref
 https://github.com/lazy-dinosaur/ccxt-mcp
 https://github.com/darkrenaissance/whallets
