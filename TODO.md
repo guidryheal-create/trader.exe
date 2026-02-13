@@ -47,3 +47,16 @@ This document outlines the current development priorities for the agentic tradin
 - [ ] Expand test coverage for both paper and live-trade guarded paths.
 - [ ] Update `.env.example` to match current settings model and defaults.
 - [ ] Add copy-trading toolkit logic (on-chain/CEX) with whale-scanner support.
+
+# quant trading toolkit
+- [ ] gather more metrics optimised for LLM to correct forecasting signal errors
+- [ ] enhance base context in LLM with bearish vs borrow signal header to optimise LLMsearches
+
+# other tools and ref
+https://github.com/lazy-dinosaur/ccxt-mcp
+https://github.com/darkrenaissance/whallets
+https://github.com/pmaji/crypto-whale-watching-app
+https://github.com/ccxt/ccxt/tree/master/examples
+https://github.com/taylorwilsdon/quantconnect-mcp
+
+
